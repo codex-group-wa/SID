@@ -50,3 +50,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: # Add the build argument for OpenSSL installation
+            OPENSSL_INSTALL: "apt-get update -y && apt-get install -y openssl"
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
