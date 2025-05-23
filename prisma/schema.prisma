@@ -1,0 +1,21 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+model Stack {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  path      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
