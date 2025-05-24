@@ -118,7 +118,7 @@ export async function restartContainer(id: string) {
     });
 }
 
-export async function clone(id: string) {
+export async function clone() {
     return new Promise((resolve, reject) => {
         const workingDir = process.env.WORKING_DIR;
         const repoRoot = process.env.REPO_ROOT;
@@ -128,7 +128,7 @@ export async function clone(id: string) {
             return;
         }
 
-        const repoName = repoRoot.split('/').pop()?.replace('.git', '') || id;
+        const repoName = repoRoot.split('/').pop()?.replace('.git', '');
         const repoPath = `${workingDir}/${repoName}`;
 
         const checkDirCmd = `if [ -d "${repoPath}" ]; then 

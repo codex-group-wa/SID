@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
 export function middleware(req: Request) {
+    const url = new URL(req.url);
+
+    // Allow /api routes to bypass host validation
+    if (url.pathname.startsWith("/api")) {
+        return NextResponse.next();
+    }
+
     // Check the Host header, if SID_ALLOWED_HOSTS is set
     const host = req.headers.get("host");
-    //console.log(host)
-
     const port = process.env.PORT || 3000;
-    //console.log(port)
 
     let allowedHosts = [`localhost:${port}`, `127.0.0.1:${port}`];
     const allowAll = process.env.SID_ALLOWED_HOSTS === "*";
