@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileBox, FolderTree } from 'lucide-react';
+import { Search, Plus, FileBox, FolderTree, FolderSync } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -45,8 +45,8 @@ const StackList = ({ stacks }: any) => {
             <h3 className="text-lg font-medium mb-2">No stacks found</h3>
             <p className="text-sm text-gray-500 mb-4">Get started by creating your first stack</p>
             <Button onClick={() => setOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Stack
+                <FolderSync className="h-4 w-4 mr-2" />
+                Sync from GitHub
             </Button>
         </div>
     );
@@ -80,8 +80,8 @@ const StackList = ({ stacks }: any) => {
                         </CardDescription>
                     </div>
                     <Button onClick={() => setOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Stack
+                        <FolderSync className="h-4 w-4 mr-2" />
+                        Sync from GitHub
                     </Button>
                 </CardHeader>
                 <CardContent>

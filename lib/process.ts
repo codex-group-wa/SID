@@ -1,6 +1,7 @@
 "use server"
 
 import { spawn } from 'node:child_process';
+import { createEvent } from './db';
 
 export async function check() {
     return new Promise((resolve, reject) => {
@@ -14,16 +15,21 @@ export async function check() {
 
         ls.stderr.on('data', (data) => {
             errorChunks.push(data);
-            console.error(`stderr: ${data}`);
+            console.error(`check() stderr: ${data}`);
+            createEvent('Error', `Check stderr: ${data}`);
         });
 
         ls.on('error', (error) => {
+            console.error(`check() process error: ${error.message}`);
+            createEvent('Error', `Process error: ${error.message}`);
             reject(new Error(`Process error: ${error.message}`));
         });
 
         ls.on('close', (code) => {
             if (code !== 0) {
                 const errorMessage = Buffer.concat(errorChunks).toString().trim();
+                console.error(`check() process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
+                createEvent('Error', `Process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
                 reject(new Error(`Process exited with code ${code}: ${errorMessage || 'Unknown error'}`));
                 return;
             }
@@ -33,13 +39,18 @@ export async function check() {
                 const jsonLines = rawOutput.split('\n').filter(line => line.trim() !== '');
 
                 if (jsonLines.length === 0) {
+                    console.info("check() found no containers.");
+                    createEvent('Info', 'No containers found');
                     resolve({ status: "success", containers: [], message: "No containers found" });
                     return;
                 }
 
                 const containers = jsonLines.map(line => JSON.parse(line));
+                console.info(`check() found ${containers.length} containers.`);
                 resolve({ status: "success", containers });
             } catch (err) {
+                console.error(`check() error parsing JSON: ${(err as Error).message}`);
+                createEvent('Error', `Error parsing JSON: ${(err as Error).message}`);
                 reject(new Error(`Error parsing JSON: ${(err as Error).message}`));
             }
         });
@@ -58,24 +69,33 @@ export async function stopContainer(id: string) {
 
         ls.stderr.on('data', (data) => {
             errorChunks.push(data);
-            console.error(`stderr: ${data}`);
+            console.error(`stopContainer(${id}) stderr: ${data}`);
+            createEvent('Error', `Stop stderr: ${data}`);
         });
 
         ls.on('error', (error) => {
+            console.error(`stopContainer(${id}) process error: ${error.message}`);
+            createEvent('Error', `Process error: ${error.message}`);
             reject(new Error(`Process error: ${error.message}`));
         });
 
         ls.on('close', (code) => {
             if (code !== 0) {
                 const errorMessage = Buffer.concat(errorChunks).toString().trim();
+                console.error(`stopContainer(${id}) process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
+                createEvent('Error', `Process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
                 reject(new Error(`Process exited with code ${code}: ${errorMessage || 'Unknown error'}`));
                 return;
             }
 
             try {
                 const rawOutput = Buffer.concat(dataChunks).toString().trim();
+                console.info(`stopContainer(${id}) success: ${rawOutput}`);
+                createEvent('Success', `Container ${id} stopped successfully`);
                 resolve({ status: "success", output: rawOutput });
             } catch (err) {
+                console.error(`stopContainer(${id}) error processing output: ${(err as Error).message}`);
+                createEvent('Error', `Error processing output: ${(err as Error).message}`);
                 reject(new Error(`Error processing output: ${(err as Error).message}`));
             }
         });
@@ -94,24 +114,33 @@ export async function restartContainer(id: string) {
 
         ls.stderr.on('data', (data) => {
             errorChunks.push(data);
-            console.error(`stderr: ${data}`);
+            console.error(`restartContainer(${id}) stderr: ${data}`);
+            createEvent('Error', `Restart stderr: ${data}`);
         });
 
         ls.on('error', (error) => {
+            console.error(`restartContainer(${id}) process error: ${error.message}`);
+            createEvent('Error', `Process error: ${error.message}`);
             reject(new Error(`Process error: ${error.message}`));
         });
 
         ls.on('close', (code) => {
             if (code !== 0) {
                 const errorMessage = Buffer.concat(errorChunks).toString().trim();
+                console.error(`restartContainer(${id}) process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
+                createEvent('Error', `Process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
                 reject(new Error(`Process exited with code ${code}: ${errorMessage || 'Unknown error'}`));
                 return;
             }
 
             try {
                 const rawOutput = Buffer.concat(dataChunks).toString().trim();
+                console.info(`restartContainer(${id}) success: ${rawOutput}`);
+                createEvent('Success', `Container ${id} restarted successfully`);
                 resolve({ status: "success", output: rawOutput });
             } catch (err) {
+                console.error(`restartContainer(${id}) error processing output: ${(err as Error).message}`);
+                createEvent('Error', `Error processing output: ${(err as Error).message}`);
                 reject(new Error(`Error processing output: ${(err as Error).message}`));
             }
         });
@@ -124,6 +153,8 @@ export async function clone() {
         const repoRoot = process.env.REPO_ROOT;
 
         if (!workingDir || !repoRoot) {
+            console.error("clone() missing WORKING_DIR or REPO_ROOT environment variables.");
+            createEvent('Error', 'Missing WORKING_DIR or REPO_ROOT environment variables');
             reject(new Error("Required environment variables WORKING_DIR or REPO_ROOT are not defined"));
             return;
         }
@@ -150,16 +181,21 @@ export async function clone() {
 
         ls.stderr.on('data', (data) => {
             errorChunks.push(data);
-            console.error(`stderr: ${data}`);
+            console.error(`clone() stderr: ${data}`);
+            createEvent('Error', `Clone stderr: ${data}`);
         });
 
         ls.on('error', (error) => {
+            console.error(`clone() process error: ${error.message}`);
+            createEvent('Error', `Process error: ${error.message}`);
             reject(new Error(`Process error: ${error.message}`));
         });
 
         ls.on('close', (code) => {
             if (code !== 0) {
                 const errorMessage = Buffer.concat(errorChunks).toString().trim();
+                console.error(`clone() process failed with code ${code}: ${errorMessage || 'Unknown error'}`);
+                createEvent('Error', `Process failed with code ${code}: ${errorMessage || 'Unknown error'}`);
                 reject(new Error(`Process failed with code ${code}: ${errorMessage || 'Unknown error'}`));
                 return;
             }
@@ -170,13 +206,77 @@ export async function clone() {
                 const resultPath = lines[lines.length - 1];
 
                 if (lines[0] === "exists") {
+                    console.info(`clone() repository already existed at ${resultPath}, pulled latest changes.`);
+                    createEvent('Info', `Repository already existed, pulled latest changes at ${resultPath}`);
                     resolve({ status: "success", path: resultPath, message: "Repository already existed, pulled latest changes" });
                 } else {
+                    console.info(`clone() repository newly cloned to ${resultPath}.`);
+                    createEvent('Info', `Repository newly cloned to ${resultPath}`);
                     resolve({ status: "success", path: resultPath, message: "Repository newly cloned" });
                 }
             } catch (err) {
+                console.error(`clone() error processing output: ${(err as Error).message}`);
+                createEvent('Error', `Error processing output: ${(err as Error).message}`);
                 reject(new Error(`Error processing output: ${(err as Error).message}`));
             }
         });
     });
+}
+
+export async function runDockerComposeForChangedDirs(files: string[]): Promise<{dir: string, result: string, error?: string}[]> {
+    let workingDir = process.env.WORKING_DIR;
+    if (!workingDir) {
+        throw new Error("WORKING_DIR environment variable is not set");
+    }
+    const repoName = process.env.REPO_ROOT?.split('/').pop()?.replace('.git', '');
+    workingDir = `${workingDir}/${repoName}`;
+    // Get unique directories from file paths
+    const dirs = Array.from(new Set(
+        files
+            .map(f => f.split('/').slice(0, -1).join('/'))
+            .filter(Boolean)
+    ));
+
+    const results: {dir: string, result: string, error?: string}[] = [];
+
+    for (const dir of dirs) {
+        const absDir = `${workingDir}/${dir}`;
+        console.info(`Running docker compose in: ${absDir}`);
+        try {
+            const result = await new Promise<string>((resolve, reject) => {
+                const proc = spawn('docker', ['compose', 'up', '-d', '--remove-orphans'], { cwd: absDir });
+                let output = '';
+                let error = '';
+
+                proc.stdout.on('data', (data) => {
+                    output += data.toString();
+                });
+                proc.stderr.on('data', (data) => {
+                    error += data.toString();
+                });
+                proc.on('close', (code) => {
+                    if (code === 0) {
+                        console.info(`docker compose up succeeded in ${absDir}: ${output.trim()}`);
+                        createEvent('Success', `docker compose up succeeded in ${absDir}`);
+                        resolve(output.trim());
+                    } else {
+                        console.error(`docker compose up failed in ${absDir}: ${error.trim()}`);
+                        createEvent('Error', `docker compose up failed in ${absDir}: ${error.trim()}`);
+                        reject(new Error(error.trim() || `Exited with code ${code}`));
+                    }
+                });
+                proc.on('error', (err) => {
+                    console.error(`Failed to start docker compose in ${absDir}: ${err.message}`);
+                    createEvent('Error', `Failed to start docker compose in ${absDir}: ${err.message}`);
+                    reject(err);
+                });
+            });
+            results.push({ dir: absDir, result });
+        } catch (err: any) {
+            console.error(`Error running docker compose in ${absDir}: ${err.message}`);
+            createEvent('Error', `Error running docker compose in ${absDir}: ${err.message}`);
+            results.push({ dir: absDir, result: '', error: err.message });
+        }
+    }
+    return results;
 }

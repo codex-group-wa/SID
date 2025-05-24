@@ -2,13 +2,15 @@
 import { check } from "../lib/process";
 import React from "react";
 import ContainerDashboard from "@/components/ContainerDashboard";
-import { getStacks } from "@/lib/db";
+import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";
+import EventTable from "@/components/EventTable";
 
 export default function Home() {
 
   const [containers, setContainers] = React.useState<any>([])
   const [stacks, setStacks] = React.useState<any>([])
+  const [events, setEvents] = React.useState<any>([])
 
   async function handleCheck() {
     let response: any = await check()
@@ -16,6 +18,9 @@ export default function Home() {
     console.log(response)
     response = await getStacks()
     setStacks(response)
+    console.log(response)
+    response = await getEvents()
+    setEvents(response)
     console.log(response)
   }
 
@@ -38,6 +43,9 @@ export default function Home() {
       )}
       <br />
       <StackList stacks={stacks} />
+      <br />
+      <EventTable events={events} />
+      <br />
     </div>
   );
 }

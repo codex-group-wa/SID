@@ -1,17 +1,18 @@
 "use server"
 
-import { clone } from '@/lib/process'
+import { clone, runDockerComposeForChangedDirs } from '@/lib/process'
 import crypto from 'crypto'
 
 export async function POST(request: Request) {
-    const secret = process.env.GITHUB_WEBHOOK_SECRET;
+    const rawBody = await request.arrayBuffer();
+    const bodyBuffer = Buffer.from(rawBody);
+/*     const secret = process.env.GITHUB_WEBHOOK_SECRET;
     if (!secret) {
         return new Response("Webhook secret not configured", { status: 500 });
     }
 
     // Get raw body as buffer for signature validation
-    const rawBody = await request.arrayBuffer();
-    const bodyBuffer = Buffer.from(rawBody);
+   
 
     // Get signature headers
     const sig256 = request.headers.get('x-hub-signature-256');
@@ -28,14 +29,33 @@ export async function POST(request: Request) {
 
     if (!valid) {
         return new Response("Invalid signature", { status: 401 });
-    }
+    } */
 
     // Parse JSON body after validation
     const body = JSON.parse(bodyBuffer.toString());
-    console.log(body);
+    //console.log(body);
 
-    const response = await clone();
+    const response: any = await clone();
     console.log(response);
-
+    const payload: any = []
+    const commits = body.commits
+    console.log(`Cloned ${commits.length} commits from the repository.`);
+    commits.forEach((commit: any) => {
+        console.log(`Commit: ${commit.id} - ${commit.message}`);
+        console.log(commit.modified, commit.added);
+        commit.modified.forEach((file: string) => {
+            console.log(`Modified file: ${file}`);
+            payload.push(file);
+        }
+        );
+        commit.added.forEach((file: string) => {
+            console.log(`Added file: ${file}`);
+            payload.push(file);
+        }
+        );
+    });
+    console.log(`Payload: ${payload}`);
+    runDockerComposeForChangedDirs(payload)
+    console.log("Docker Compose run completed for changed directories.");
     return new Response("Done", { status: 200 });
 }

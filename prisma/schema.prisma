@@ -13,9 +13,21 @@ generator client {
 
 model Stack {
   id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
+  name      String   @unique
   path      String
+  status    String
+  lastEvent String?
+  lastEventAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  events    Event[]  @relation("StackToEvents")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  type      String
+  message   String
+  stackId   String?  // Optional relation to Stack
+  createdAt DateTime @default(now())
+  stack     Stack?   @relation("StackToEvents", fields: [stackId], references: [id])
 }
