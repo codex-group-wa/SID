@@ -1,6 +1,8 @@
 "use server"
 
 import { spawn } from 'node:child_process';
+import { readdirSync, statSync } from 'fs';
+import { join } from 'path';
 import { createEvent } from './db';
 
 export async function check() {
@@ -278,5 +280,47 @@ export async function runDockerComposeForChangedDirs(files: string[]): Promise<{
             results.push({ dir: absDir, result: '', error: err.message });
         }
     }
+    return results;
+}
+
+export async function findAllDockerComposeFiles(): Promise<string[]> {
+    let workingDir = process.env.WORKING_DIR;
+    const repoName = process.env.REPO_ROOT?.split('/').pop()?.replace('.git', '');
+    if (!workingDir || !repoName) {
+        throw new Error("WORKING_DIR or REPO_ROOT environment variable is not set");
+    }
+    const rootDir = join(workingDir, repoName);
+
+    const results: string[] = [];
+
+    function walk(dir: string) {
+        let entries: string[];
+        try {
+            entries = readdirSync(dir);
+        } catch (err) {
+            console.error(`Error reading directory ${dir}: ${(err as Error).message}`);
+            return;
+        }
+        for (const entry of entries) {
+            const fullPath = join(dir, entry);
+            let stats;
+            try {
+                stats = statSync(fullPath);
+            } catch (err) {
+                console.error(`Error stating path ${fullPath}: ${(err as Error).message}`);
+                continue;
+            }
+            if (stats.isDirectory()) {
+                walk(fullPath);
+            } else if (
+                entry === 'docker-compose.yml' ||
+                entry === 'docker-compose.yaml'
+            ) {
+                results.push(fullPath);
+            }
+        }
+    }
+
+    walk(rootDir);
     return results;
 }

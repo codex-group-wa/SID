@@ -10,7 +10,10 @@ export default function Home() {
 
   const [containers, setContainers] = React.useState<any>([])
   const [stacks, setStacks] = React.useState<any>([])
-  const [events, setEvents] = React.useState<any>([])
+  const [events, setEvents] = React.useState<any>([]);
+  const [totalEvents, setTotalEvents] = React.useState(0);
+  const [page, setPage] = React.useState(1);
+  const pageSize = 10;
 
   async function handleCheck() {
     let response: any = await check()
@@ -20,9 +23,19 @@ export default function Home() {
     setStacks(response)
     console.log(response)
     response = await getEvents()
-    setEvents(response)
+    setEvents(response.events)
     console.log(response)
   }
+
+  async function fetchEvents(page: number) {
+  const { events, total } = await getEvents(page, pageSize);
+  setEvents(events);
+  setTotalEvents(total);
+}
+
+  React.useEffect(() => {
+    fetchEvents(page);
+  }, [page]);
 
   React.useEffect(() => {
     handleCheck()
@@ -44,7 +57,17 @@ export default function Home() {
       <br />
       <StackList stacks={stacks} />
       <br />
-      <EventTable events={events} />
+     {events && events.length > 0 ? <EventTable
+        events={events}
+        page={page}
+        total={totalEvents}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      /> : (
+        <div className="p-8 text-center text-gray-500">
+          Loading events...
+        </div>
+      )}
       <br />
     </div>
   );

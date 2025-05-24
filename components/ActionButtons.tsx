@@ -22,7 +22,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ containerId, handleAction
     return (
         <div className="flex space-x-1">
             {actions.map(({ type, icon }) => (
-                <TooltipProvider>
+                <TooltipProvider key={type}>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
