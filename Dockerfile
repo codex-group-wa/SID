@@ -40,6 +40,7 @@ RUN mkdir -p /app/data
 
 # Install Docker CLI and other dependencies
 RUN apk add --no-cache openssl docker-cli su-exec sqlite
+RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
 
 # Copy public directory from context
 COPY --link --chown=1000:1000 public ./public/
