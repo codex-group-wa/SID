@@ -42,14 +42,12 @@ export async function check() {
 
                 if (jsonLines.length === 0) {
                     console.info("check() found no containers.");
-                    createEvent('Info', 'No containers found');
                     resolve({ status: "success", containers: [], message: "No containers found" });
                     return;
                 }
 
                 const containers = jsonLines.map(line => JSON.parse(line));
                 console.info(`check() found ${containers.length} containers.`);
-                createEvent('Info', `Found ${containers.length} containers`);
                 resolve({ status: "success", containers });
             } catch (err) {
                 console.error(`check() error parsing JSON: ${(err as Error).message}`);
