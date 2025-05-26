@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getEvents } from '@/lib/db'; // Import server action
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Info, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -19,33 +21,30 @@ const typeIcon = (type: string) => {
 };
 
 interface EventTableProps {
-    events: any[];
-    page: number;
-    total: number;
-    pageSize?: number;
-    onPageChange?: (page: number) => void;
+    initialEvents: any[];
+    totalEvents: number;
+    pageSize: number;
 }
 
 const EventTable: React.FC<EventTableProps> = ({
-    events,
-    page,
-    total,
-    pageSize = 10,
-    onPageChange,
+    initialEvents,
+    totalEvents,
+    pageSize,
 }) => {
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentEvents, setCurrentEvents] = useState(initialEvents);
+    const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredEvents = events.filter((event) =>
-        event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (event.stack?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
+    const totalPages = Math.max(1, Math.ceil(totalEvents / pageSize));
 
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    // If searching, show filtered results only, otherwise use paginated events from parent
     const displayEvents = searchTerm
-        ? filteredEvents.slice(0, pageSize)
-        : events;
+        ? currentEvents.filter((event) =>
+            event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            event.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (event.stack?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+          )
+        : currentEvents;
 
     const formatDate = (dateString: string) => {
         try {
@@ -55,13 +54,47 @@ const EventTable: React.FC<EventTableProps> = ({
         }
     };
 
-    const handlePrev = () => onPageChange && onPageChange(Math.max(1, page - 1));
-    const handleNext = () => onPageChange && onPageChange(Math.min(totalPages, page + 1));
+    const handlePrev = async () => {
+        if (currentPage > 1) {
+            const newPage = currentPage - 1;
+            setIsLoading(true);
+            try {
+                const { events: newEvents } = await getEvents(newPage, pageSize);
+                setCurrentEvents(newEvents);
+                setCurrentPage(newPage);
+            } catch (error) {
+                console.error("Failed to fetch previous page events:", error);
+                // Optionally, handle error state in UI
+            }
+            setIsLoading(false);
+        }
+    };
 
-    // Reset to first page on search
-    React.useEffect(() => {
-        if (onPageChange) onPageChange(1);
+    const handleNext = async () => {
+        if (currentPage < totalPages) {
+            const newPage = currentPage + 1;
+            setIsLoading(true);
+            try {
+                const { events: newEvents } = await getEvents(newPage, pageSize);
+                setCurrentEvents(newEvents);
+                setCurrentPage(newPage);
+            } catch (error) {
+                console.error("Failed to fetch next page events:", error);
+                // Optionally, handle error state in UI
+            }
+            setIsLoading(false);
+        }
+    };
+
+    // Effect for handling search term changes
+    useEffect(() => {
+        // When search term changes, we are filtering the `currentEvents`.
+        // If `currentEvents` are from a different page than 1, the search will be on that page's data.
+        // For simplicity, we don't refetch page 1 on search term change here.
+        // We could reset to page 1 if that's desired:
+        // if (searchTerm) setCurrentPage(1); // This might need a refetch for page 1 if not already on it.
     }, [searchTerm]);
+
 
     return (
         <Card className="w-full">
@@ -117,14 +150,14 @@ const EventTable: React.FC<EventTableProps> = ({
                             </Table>
                             <div className="flex items-center justify-between px-4 py-2 border-t ">
                                 <span className="text-sm text-gray-600">
-                                    Page {page} of {totalPages}
+                                    Page {currentPage} of {totalPages}
                                 </span>
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={handlePrev}
-                                        disabled={page === 1}
+                                        disabled={currentPage === 1 || isLoading}
                                     >
                                         <ChevronLeft className="h-4 w-4" />
                                         Prev
@@ -133,7 +166,7 @@ const EventTable: React.FC<EventTableProps> = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={handleNext}
-                                        disabled={page === totalPages}
+                                        disabled={currentPage === totalPages || isLoading}
                                     >
                                         Next
                                         <ChevronRight className="h-4 w-4" />

@@ -1,6 +1,7 @@
 "use server"
 
 import { clone, runDockerComposeForChangedDirs } from '@/lib/process'
+import { revalidatePath } from 'next/cache';
 import crypto from 'crypto'
 
 export async function POST(request: Request) {
@@ -55,7 +56,8 @@ export async function POST(request: Request) {
         );
     });
     console.log(`Payload: ${payload}`);
-    runDockerComposeForChangedDirs(payload)
+    await runDockerComposeForChangedDirs(payload) // Ensure this completes
     console.log("Docker Compose run completed for changed directories.");
+    revalidatePath('/'); // Final revalidation for the webhook
     return new Response("Done", { status: 200 });
 }

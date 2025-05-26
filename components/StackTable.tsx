@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -62,7 +63,7 @@ const StackList = ({ stacks }: any) => {
             </div>
             <h3 className="text-lg font-medium mb-2">No stacks found</h3>
             <p className="text-sm text-gray-500 mb-4">Get started by creating your first stack</p>
-            <Button onClick={() => syncStacks()}>
+            <Button onClick={async () => { await syncStacks(); }}>
                 <FolderSync className="h-4 w-4 mr-2" />
                 Sync from GitHub
             </Button>
@@ -78,7 +79,7 @@ const StackList = ({ stacks }: any) => {
                             Manage your application stacks
                         </CardDescription>
                     </div>
-                    <Button onClick={() => syncStacks()}>
+                    <Button onClick={async () => { await syncStacks(); }}>
                         <FolderSync className="h-4 w-4 mr-2" />
                         Sync from GitHub
                     </Button>

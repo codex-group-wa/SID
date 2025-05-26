@@ -1,4 +1,3 @@
-"use client"
 import { check } from "../lib/process";
 import React from "react";
 import ContainerDashboard from "@/components/ContainerDashboard";
@@ -6,40 +5,15 @@ import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";
 import EventTable from "@/components/EventTable";
 
-export default function Home() {
+export default async function Home() {
+  const containerData = await check() || { containers: [] };
+  const stacksData = await getStacks() || [];
+  const eventPageSize = 10;
+  const initialEventsData = await getEvents(1, eventPageSize) || { events: [], total: 0 };
 
-  const [containers, setContainers] = React.useState<any>([])
-  const [stacks, setStacks] = React.useState<any>([])
-  const [events, setEvents] = React.useState<any>([]);
-  const [totalEvents, setTotalEvents] = React.useState(0);
-  const [page, setPage] = React.useState(1);
-  const pageSize = 10;
-
-  async function handleCheck() {
-    let response: any = await check()
-    setContainers(response.containers)
-    console.log(response)
-    response = await getStacks()
-    setStacks(response)
-    console.log(response)
-    response = await getEvents()
-    setEvents(response.events)
-    console.log(response)
-  }
-
-  async function fetchEvents(page: number) {
-  const { events, total } = await getEvents(page, pageSize);
-  setEvents(events);
-  setTotalEvents(total);
-}
-
-  React.useEffect(() => {
-    fetchEvents(page);
-  }, [page]);
-
-  React.useEffect(() => {
-    handleCheck()
-  }, [])
+  // Removed useState for page and totalEvents
+  // Removed fetchEvents function
+  // Removed useEffect hook for page changes
 
   return (
     <div className="p-4">
@@ -47,23 +21,21 @@ export default function Home() {
         <h1 className="text-2xl font-bold p-2">SID Dashboard</h1>
       </div>
       <br />
-      {containers && containers.length > 0 ? (
-        <ContainerDashboard containers={containers} handleCheck={handleCheck} />
+      {containerData.containers && containerData.containers.length > 0 ? (
+        <ContainerDashboard containers={containerData.containers} />
       ) : (
         <div className="p-8 text-center text-gray-500">
-          Loading containers...
+          No containers found or failed to load.
         </div>
       )}
       <br />
-      <StackList stacks={stacks} />
+      <StackList stacks={stacksData} />
       <br />
       <EventTable
-        events={events}
-        page={page}
-        total={totalEvents}
-        pageSize={pageSize}
-        onPageChange={setPage}
-      /> 
+        initialEvents={initialEventsData.events}
+        totalEvents={initialEventsData.total}
+        pageSize={eventPageSize}
+      />
     </div>
   );
 }

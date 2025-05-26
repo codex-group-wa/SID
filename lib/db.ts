@@ -1,6 +1,7 @@
 "use server"
 
 import { PrismaClient } from '@prisma/client'
+import { revalidatePath } from 'next/cache';
 import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import { findAllDockerComposeFiles } from './process';
 
@@ -18,6 +19,7 @@ export async function createStack(formData: any) {
         }
     })
     createEvent('Success', `Stack created: ${formData.name}`)
+    revalidatePath('/');
     return response
 }
 
@@ -54,6 +56,13 @@ export async function syncStacks() {
             console.error(`Failed to sync stack for ${filePath}: ${err.message}`);
             await createEvent('Error', `Failed to sync stack for ${filePath}: ${err.message}`);
         }
+    }
+    // Revalidate only if there were compose files to process.
+    // And ideally, only if at least one stack was successfully synced/created.
+    // For simplicity, we'll revalidate if composeFiles were found,
+    // assuming an attempt to sync was made.
+    if (composeFiles && composeFiles.length > 0) {
+        revalidatePath('/');
     }
     return stacksCreated;
 }

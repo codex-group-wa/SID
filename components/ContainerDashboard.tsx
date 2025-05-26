@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,11 @@ interface Container {
     Mounts: string;
 }
 
-const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
+interface ContainerDashboardProps {
+    containers: Container[];
+}
+
+const ContainerDashboard: React.FC<ContainerDashboardProps> = ({ containers }) => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const filteredContainers = containers.filter((container: Container) =>
@@ -31,12 +36,12 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
         if (action === 'stop') {
             const response = await stopContainer(id)
             console.info(response)
-            handleCheck()
+            // handleCheck() removed
         }
         else if (action === 'restart') {
             const response = await restartContainer(id)
             console.info(response)
-            handleCheck()
+            // handleCheck() removed
         }
     }
 

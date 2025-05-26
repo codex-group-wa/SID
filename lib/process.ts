@@ -1,6 +1,7 @@
 "use server"
 
 import { spawn } from 'node:child_process';
+import { revalidatePath } from 'next/cache';
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { createEvent } from './db';
@@ -93,6 +94,7 @@ export async function stopContainer(id: string) {
                 const rawOutput = Buffer.concat(dataChunks).toString().trim();
                 console.info(`stopContainer(${id}) success: ${rawOutput}`);
                 createEvent('Success', `Container ${id} stopped successfully`);
+                revalidatePath('/');
                 resolve({ status: "success", output: rawOutput });
             } catch (err) {
                 console.error(`stopContainer(${id}) error processing output: ${(err as Error).message}`);
@@ -138,6 +140,7 @@ export async function restartContainer(id: string) {
                 const rawOutput = Buffer.concat(dataChunks).toString().trim();
                 console.info(`restartContainer(${id}) success: ${rawOutput}`);
                 createEvent('Success', `Container ${id} restarted successfully`);
+                revalidatePath('/');
                 resolve({ status: "success", output: rawOutput });
             } catch (err) {
                 console.error(`restartContainer(${id}) error processing output: ${(err as Error).message}`);
@@ -209,10 +212,12 @@ export async function clone() {
                 if (lines[0] === "exists") {
                     console.info(`clone() repository already exists at ${resultPath}, pulled latest changes.`);
                     createEvent('Info', `Repository already exists, pulled latest changes at ${resultPath}`);
+                    revalidatePath('/');
                     resolve({ status: "success", path: resultPath, message: "Repository already exists, pulled latest changes" });
                 } else {
                     console.info(`clone() repository newly cloned to ${resultPath}.`);
                     createEvent('Info', `Repository newly cloned to ${resultPath}`);
+                    revalidatePath('/');
                     resolve({ status: "success", path: resultPath, message: "Repository newly cloned" });
                 }
             } catch (err) {
@@ -239,6 +244,7 @@ export async function runDockerComposeForChangedDirs(files: string[]): Promise<{
     ));
 
     const results: {dir: string, result: string, error?: string}[] = [];
+    let allSuccessful = true;
 
     for (const dir of dirs) {
         const absDir = `${workingDir}/${dir}`;
@@ -263,12 +269,14 @@ export async function runDockerComposeForChangedDirs(files: string[]): Promise<{
                     } else {
                         console.error(`docker compose up failed in ${absDir}: ${error.trim()}`);
                         createEvent('Error', `docker compose up failed in ${absDir}: ${error.trim()}`, dir.split('/')[0]);
+                        allSuccessful = false; // Mark as not all successful
                         reject(new Error(error.trim() || `Exited with code ${code}`));
                     }
                 });
                 proc.on('error', (err) => {
                     console.error(`Failed to start docker compose in ${absDir}: ${err.message}`);
                     createEvent('Error', `Failed to start docker compose in ${absDir}: ${err.message}`, dir.split('/')[0]);
+                    allSuccessful = false; // Mark as not all successful
                     reject(err);
                 });
             });
@@ -277,7 +285,12 @@ export async function runDockerComposeForChangedDirs(files: string[]): Promise<{
             console.error(`Error running docker compose in ${absDir}: ${err.message}`);
             createEvent('Error', `Error running docker compose in ${absDir}: ${err.message}`, dir.split('/')[0]);
             results.push({ dir: absDir, result: '', error: err.message });
+            allSuccessful = false; // Mark as not all successful
         }
+    }
+
+    if (allSuccessful && dirs.length > 0) {
+        revalidatePath('/');
     }
     return results;
 }
