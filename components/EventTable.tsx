@@ -64,7 +64,7 @@ const EventTable: React.FC<EventTableProps> = ({
     }, [searchTerm]);
 
     return (
-        <Card className="w-full mt-8">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle className="text-xl font-bold">Events</CardTitle>
                 <CardDescription>

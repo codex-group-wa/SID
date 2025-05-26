@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileBox, FolderTree, FolderSync } from 'lucide-react';
+import { Search, Plus, FileBox, FolderTree, FolderSync, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { syncStacks } from '@/lib/db';
@@ -16,13 +16,43 @@ const StackList = ({ stacks }: any) => {
         stack.path.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const typeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+        case 'error':
+            return <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />;
+        case 'success':
+            return <CheckCircle className="h-4 w-4 text-green-500 mr-2" />;
+        case 'info':
+        default:
+            return <Info className="h-4 w-4 text-blue-500 mr-2" />;
+    }
+};
+
     const formatDate = (dateString: string) => {
         try {
+            if(dateString)
+            {
             return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+            }
+            else{
+            return "Not yet deployed"
+            }
         } catch {
             return 'Invalid date';
         }
     };
+
+    const getShortPath = (fullPath: string) => {
+    // Try to find the "/compose-v2" or repo folder in the path and return from there
+    const repoRoot = process.env.REPO_ROOT?.split('/').pop()?.replace('.git', '') || 'compose-v2';
+    const idx = fullPath.indexOf(`/${repoRoot}/`);
+    if (idx !== -1) {
+        return fullPath.substring(idx);
+    }
+    // Fallback: show last two segments
+    const parts = fullPath.split('/');
+    return '/' + parts.slice(-3).join('/');
+};
 
     // Empty state component
     const EmptyState = () => (
@@ -76,14 +106,16 @@ const StackList = ({ stacks }: any) => {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>Last Status</TableHead>
                                         <TableHead className="hidden md:table-cell">Path</TableHead>
                                         <TableHead className="hidden md:table-cell">Created</TableHead>
-                                        <TableHead className="hidden lg:table-cell">Updated</TableHead>
+                                        <TableHead className="hidden lg:table-cell">Last Synced</TableHead>
+                                        <TableHead className="hidden lg:table-cell">Last Deployed</TableHead>
+
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredStacks.map((stack: { id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; status: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; path: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; createdAt: string; updatedAt: string; }) => (
+                                    {filteredStacks.map((stack: any) => (
                                         <TableRow key={stack.id}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center">
@@ -91,10 +123,17 @@ const StackList = ({ stacks }: any) => {
                                                     {stack.name}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-gray-500">{stack.status}</TableCell>
-                                            <TableCell className="hidden md:table-cell truncate max-w-xs">{stack.path}</TableCell>
+                                           <TableCell className="text-gray-500">
+                                                {stack.events && stack.events.length > 0 ? <span className='flex text-white'>{typeIcon(stack.events[0].type)}{stack.events[0].type}</span> : "No events"}
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell truncate max-w-xs">
+                                                <span title={typeof stack.path === 'string' ? stack.path : ''}>
+                                                    {typeof stack.path === 'string' ? getShortPath(stack.path) : stack.path}
+                                                </span>
+                                            </TableCell>
                                             <TableCell className="hidden md:table-cell text-gray-500 text-sm">{formatDate(stack.createdAt)}</TableCell>
                                             <TableCell className="hidden lg:table-cell text-gray-500 text-sm">{formatDate(stack.updatedAt)}</TableCell>
+                                            <TableCell className="hidden lg:table-cell text-gray-500 text-sm">{formatDate(stack.events[0]?.createdAt)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

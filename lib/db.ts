@@ -2,7 +2,6 @@
 
 import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
-import { revalidatePath } from 'next/cache';
 import { findAllDockerComposeFiles } from './process';
 
 const adapter = new PrismaBetterSQLite3({
@@ -19,7 +18,6 @@ export async function createStack(formData: any) {
         }
     })
     createEvent('Success', `Stack created: ${formData.name}`)
-    revalidatePath('/')
     return response
 }
 
@@ -57,24 +55,32 @@ export async function syncStacks() {
             await createEvent('Error', `Failed to sync stack for ${filePath}: ${err.message}`);
         }
     }
-    revalidatePath('/');
     return stacksCreated;
 }
 
 export async function getStacks() {
-    const response = await prisma.stack.findMany({})
+    const response = await prisma.stack.findMany({
+        include: {
+            events: {
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+            },
+        },
+    })
     return response
 }
 
-export async function createEvent(type: string, message: any) {
+export async function createEvent(type: string, message: any, stackName?: string) {
     const response = await prisma.event.create({
         data: {
             type: type,
-            message: message
+            message: message,
+            stack: {
+                connect: stackName ? { name: stackName } : undefined
+            },
         }
-    })
-    revalidatePath('/')
-    return response
+    });
+    return response;
 }
 
 export async function getEvents(page = 1, pageSize = 10) {
@@ -84,7 +90,7 @@ export async function getEvents(page = 1, pageSize = 10) {
             orderBy: { createdAt: 'desc' },
             skip,
             take: pageSize,
-            include: { stack: true }, // if you want stack info
+            include: { stack: true },
         }),
         prisma.event.count(),
     ]);

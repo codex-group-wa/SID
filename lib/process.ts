@@ -49,6 +49,7 @@ export async function check() {
 
                 const containers = jsonLines.map(line => JSON.parse(line));
                 console.info(`check() found ${containers.length} containers.`);
+                createEvent('Info', `Found ${containers.length} containers`);
                 resolve({ status: "success", containers });
             } catch (err) {
                 console.error(`check() error parsing JSON: ${(err as Error).message}`);
@@ -208,9 +209,9 @@ export async function clone() {
                 const resultPath = lines[lines.length - 1];
 
                 if (lines[0] === "exists") {
-                    console.info(`clone() repository already existed at ${resultPath}, pulled latest changes.`);
-                    createEvent('Info', `Repository already existed, pulled latest changes at ${resultPath}`);
-                    resolve({ status: "success", path: resultPath, message: "Repository already existed, pulled latest changes" });
+                    console.info(`clone() repository already exists at ${resultPath}, pulled latest changes.`);
+                    createEvent('Info', `Repository already exists, pulled latest changes at ${resultPath}`);
+                    resolve({ status: "success", path: resultPath, message: "Repository already exists, pulled latest changes" });
                 } else {
                     console.info(`clone() repository newly cloned to ${resultPath}.`);
                     createEvent('Info', `Repository newly cloned to ${resultPath}`);
@@ -259,24 +260,24 @@ export async function runDockerComposeForChangedDirs(files: string[]): Promise<{
                 proc.on('close', (code) => {
                     if (code === 0) {
                         console.info(`docker compose up succeeded in ${absDir}: ${output.trim()}`);
-                        createEvent('Success', `docker compose up succeeded in ${absDir}`);
+                        createEvent('Success', `docker compose up succeeded in ${absDir}`, dir.split('/')[0]);
                         resolve(output.trim());
                     } else {
                         console.error(`docker compose up failed in ${absDir}: ${error.trim()}`);
-                        createEvent('Error', `docker compose up failed in ${absDir}: ${error.trim()}`);
+                        createEvent('Error', `docker compose up failed in ${absDir}: ${error.trim()}`, dir.split('/')[0]);
                         reject(new Error(error.trim() || `Exited with code ${code}`));
                     }
                 });
                 proc.on('error', (err) => {
                     console.error(`Failed to start docker compose in ${absDir}: ${err.message}`);
-                    createEvent('Error', `Failed to start docker compose in ${absDir}: ${err.message}`);
+                    createEvent('Error', `Failed to start docker compose in ${absDir}: ${err.message}`, dir.split('/')[0]);
                     reject(err);
                 });
             });
             results.push({ dir: absDir, result });
         } catch (err: any) {
             console.error(`Error running docker compose in ${absDir}: ${err.message}`);
-            createEvent('Error', `Error running docker compose in ${absDir}: ${err.message}`);
+            createEvent('Error', `Error running docker compose in ${absDir}: ${err.message}`, dir.split('/')[0]);
             results.push({ dir: absDir, result: '', error: err.message });
         }
     }

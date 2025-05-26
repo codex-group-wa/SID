@@ -57,18 +57,13 @@ export default function Home() {
       <br />
       <StackList stacks={stacks} />
       <br />
-     {events && events.length > 0 ? <EventTable
+      <EventTable
         events={events}
         page={page}
         total={totalEvents}
         pageSize={pageSize}
         onPageChange={setPage}
-      /> : (
-        <div className="p-8 text-center text-gray-500">
-          Loading events...
-        </div>
-      )}
-      <br />
+      /> 
     </div>
   );
 }
