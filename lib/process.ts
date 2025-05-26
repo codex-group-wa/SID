@@ -59,6 +59,7 @@ export async function check() {
 }
 
 export async function stopContainer(id: string) {
+    console.info(`Stopping container with ID: ${id}`);
     return new Promise((resolve, reject) => {
         const ls = spawn('docker', ['stop', id]);
         let dataChunks: Buffer[] = [];
@@ -96,6 +97,52 @@ export async function stopContainer(id: string) {
                 resolve({ status: "success", output: rawOutput });
             } catch (err) {
                 console.error(`stopContainer(${id}) error processing output: ${(err as Error).message}`);
+                createEvent('Error', `Error processing output: ${(err as Error).message}`);
+                reject(new Error(`Error processing output: ${(err as Error).message}`));
+            }
+        });
+    });
+}
+
+export async function killContainer(id: string) {
+    console.info(`Killing container with ID: ${id}`);
+    return new Promise((resolve, reject) => {
+        const ls = spawn('docker', ['kill', id]);
+        let dataChunks: Buffer[] = [];
+        let errorChunks: Buffer[] = [];
+
+        ls.stdout.on('data', (data) => {
+            dataChunks.push(data);
+        });
+
+        ls.stderr.on('data', (data) => {
+            errorChunks.push(data);
+            console.error(`killContainer(${id}) stderr: ${data}`);
+            createEvent('Error', `Kill stderr: ${data}`);
+        });
+
+        ls.on('error', (error) => {
+            console.error(`killContainer(${id}) process error: ${error.message}`);
+            createEvent('Error', `Process error: ${error.message}`);
+            reject(new Error(`Process error: ${error.message}`));
+        });
+
+        ls.on('close', (code) => {
+            if (code !== 0) {
+                const errorMessage = Buffer.concat(errorChunks).toString().trim();
+                console.error(`killContainer(${id}) process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
+                createEvent('Error', `Process exited with code ${code}: ${errorMessage || 'Unknown error'}`);
+                reject(new Error(`Process exited with code ${code}: ${errorMessage || 'Unknown error'}`));
+                return;
+            }
+
+            try {
+                const rawOutput = Buffer.concat(dataChunks).toString().trim();
+                console.info(`killContainer(${id}) success: ${rawOutput}`);
+                createEvent('Success', `Container ${id} stopped successfully`);
+                resolve({ status: "success", output: rawOutput });
+            } catch (err) {
+                console.error(`killContainer(${id}) error processing output: ${(err as Error).message}`);
                 createEvent('Error', `Error processing output: ${(err as Error).message}`);
                 reject(new Error(`Error processing output: ${(err as Error).message}`));
             }

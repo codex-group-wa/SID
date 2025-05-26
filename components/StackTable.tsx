@@ -6,8 +6,9 @@ import { Search, Plus, FileBox, FolderTree, FolderSync, AlertTriangle, CheckCirc
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { syncStacks } from '@/lib/db';
+import { toast } from 'sonner';
 
-const StackList = ({ stacks }: any) => {
+const StackList = ({ stacks, handleCheck }: any) => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const filteredStacks = stacks.filter((stack: { name: string; slug: string; path: string; }) =>
@@ -15,6 +16,18 @@ const StackList = ({ stacks }: any) => {
         stack.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
         stack.path.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    async function handleSync() {
+        try {
+            await syncStacks();
+            handleCheck();
+            toast.success('Stacks synced successfully!');
+        } catch (error) {
+            console.error('Error syncing stacks:', error);
+            handleCheck();
+            toast.error('Failed to sync stacks. Please try again.');
+        }
+    }
 
     const typeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -62,7 +75,7 @@ const StackList = ({ stacks }: any) => {
             </div>
             <h3 className="text-lg font-medium mb-2">No stacks found</h3>
             <p className="text-sm text-gray-500 mb-4">Get started by creating your first stack</p>
-            <Button onClick={() => syncStacks()}>
+            <Button onClick={() => handleSync()}>
                 <FolderSync className="h-4 w-4 mr-2" />
                 Sync from GitHub
             </Button>
@@ -78,7 +91,7 @@ const StackList = ({ stacks }: any) => {
                             Manage your application stacks
                         </CardDescription>
                     </div>
-                    <Button onClick={() => syncStacks()}>
+                    <Button onClick={() => handleSync()}>
                         <FolderSync className="h-4 w-4 mr-2" />
                         Sync from GitHub
                     </Button>

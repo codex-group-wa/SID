@@ -55,7 +55,7 @@ export default function Home() {
         </div>
       )}
       <br />
-      <StackList stacks={stacks} />
+      <StackList stacks={stacks} handleCheck={handleCheck} />
       <br />
       <EventTable
         events={events}

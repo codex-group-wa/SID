@@ -1,11 +1,13 @@
+"use client";
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { ChevronRight, RotateCw, Search, StopCircle, X, Zap } from 'lucide-react';
+import { ChevronRight, Loader2, RotateCw, Search, StopCircle, X, Zap } from 'lucide-react';
 import ActionButtons from './ActionButtons';
-import { restartContainer, stopContainer } from '@/lib/process';
+import { restartContainer, stopContainer, killContainer } from '@/lib/process';
+import { toast } from 'sonner';
 
 interface Container {
     ID: string;
@@ -18,8 +20,9 @@ interface Container {
 }
 
 const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
-
     const [searchTerm, setSearchTerm] = useState('');
+    const [loadingId, setLoadingId] = useState<string | null>(null);
+
     const filteredContainers = containers.filter((container: Container) =>
         container.Names.toLowerCase().includes(searchTerm.toLowerCase()) ||
         container.Image.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -27,16 +30,41 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
     );
 
     async function handleAction(id: string, action: string) {
-        console.log(id, action)
-        if (action === 'stop') {
-            const response = await stopContainer(id)
-            console.info(response)
-            handleCheck()
-        }
-        else if (action === 'restart') {
-            const response = await restartContainer(id)
-            console.info(response)
-            handleCheck()
+        setLoadingId(id);
+        try {
+            if (action === 'Stop') {
+                const response: any = await stopContainer(id);
+                console.info(response);
+                if (response.status === 'error') {
+                    toast.error(`Failed to stop container ${id}`);
+                }
+                else if (response.status === 'success'){
+                    toast.success(`Container ${id} stopped successfully!`);
+                }
+                handleCheck();
+            } else if (action === 'Restart') {
+                const response: any = await restartContainer(id);
+                console.info(response);
+                if (response.status === 'error') {
+                    toast.error(`Failed to restart container ${id}`);
+                }
+                else if (response.status === 'success'){
+                    toast.success(`Container ${id} restarted successfully!`);
+                }
+                handleCheck();
+            } else if (action === 'Kill') {
+                const response: any = await killContainer(id);
+                console.info(response);
+                if (response.status === 'error') {
+                    toast.error(`Failed to kill container ${id}`);
+                }
+                else if (response.status === 'success'){
+                    toast.success(`Container ${id} killed successfully!`);
+                }
+                handleCheck();
+            }
+        } finally {
+            setLoadingId(null);
         }
     }
 
@@ -106,7 +134,13 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
                                             <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">{container.Mounts}</TableCell>
 
                                             <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">
-                                                <ActionButtons containerId={container.ID} handleAction={handleAction} />
+                                                {loadingId === container.ID ? (
+                                                    <span className="flex items-center justify-center">
+                                                        <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                                                    </span>
+                                                ) : (
+                                                    <ActionButtons containerId={container.ID} handleAction={handleAction} />
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))
