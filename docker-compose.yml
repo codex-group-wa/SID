@@ -1,0 +1,13 @@
+services:
+  app:
+    image: ghcr.io/declan-wade/sid:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - SID_ALLOWED_HOSTS=localhost:3000 ## Required: the host and port where the app is accessible
+      - REPO_ROOT=https://github.com/<username>/<reponame> ## Required: the URL of the repository root
+      - WORKING_DIR="/usr/src/sid" ## Do not change this unless you know what you are doing
+      - GITHUB_WEBHOOK_SECRET="abc" ## This is used to verify the GitHub webhook
+    volumes:
+      - ./sid/app/:/app/ ## The host path needs to end with /app/ 
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -60,7 +60,7 @@ ENV DATABASE_URL=file:/app/data/database.db
 
 EXPOSE $PORT
 
-HEALTHCHECK --interval=10s --timeout=3s --start-period=20s \
+HEALTHCHECK --interval=20s --timeout=5s --start-period=30s \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:$PORT/api/healthcheck || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
