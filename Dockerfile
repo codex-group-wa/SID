@@ -38,8 +38,10 @@ WORKDIR /app
 RUN mkdir -p /app/data
 
 # Install Docker CLI and other dependencies
-RUN apk add --no-cache openssl docker-cli su-exec sqlite python3 && ln -sf python3 /usr/bin/python
+RUN apk add --no-cache openssl docker-cli su-exec sqlite python3
+RUN ln -sf python3 /usr/bin/python
 RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
+RUN export npm_config_python=/usr/bin/python
 
 # Copy public directory from context
 COPY --link --chown=1000:1000 public ./public/
