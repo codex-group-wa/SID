@@ -1,7 +1,7 @@
 # =========================
 # Builder Stage
 # =========================
-FROM node:22-slim AS builder
+FROM oven/bun:1.1.0 as builder
 WORKDIR /app
 
 # Setup
@@ -15,16 +15,15 @@ ARG REVISION
 ENV CI=$CI
 
 # Install dependencies and build
-RUN corepack enable && \
-  corepack prepare pnpm@latest --activate && \
-  pnpm install --prefer-offline && \
-  npx prisma generate && \
-  NEXT_TELEMETRY_DISABLED=1 pnpm run build
+RUN bun install --frozen-lockfile && \
+  bunx prisma generate && \
+  NEXT_TELEMETRY_DISABLED=1 bun run build
 
 # =========================
 # Runtime Stage
 # =========================
 FROM node:22-alpine AS runner
+
 LABEL org.opencontainers.image.title="SID"
 LABEL org.opencontainers.image.description="Manage your docker deployments with SID"
 LABEL org.opencontainers.image.url="https://github.com/declan-wade"
@@ -49,13 +48,11 @@ COPY --link --chmod=755 docker-entrypoint.sh /usr/local/bin/
 # Copy Next.js build output from builder
 COPY --link --from=builder --chown=1000:1000 /app/.next/standalone/ ./
 COPY --link --from=builder --chown=1000:1000 /app/.next/static/ ./.next/static
-#COPY --link --from=builder --chown=1000:1000 /app/node_modules/.prisma ./node_modules/.prisma
 COPY --link --from=builder --chown=1000:1000 /app/prisma ./prisma
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
-# Set database URL to use the data directory
 ENV DATABASE_URL=file:/app/data/database.db
 
 EXPOSE $PORT
