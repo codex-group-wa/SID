@@ -1,7 +1,7 @@
 # =========================
 # Builder Stage
 # =========================
-FROM oven/bun:1.1.0 as builder
+FROM node:22-slim AS builder
 WORKDIR /app
 
 # Setup
@@ -15,9 +15,11 @@ ARG REVISION
 ENV CI=$CI
 
 # Install dependencies and build
-RUN bun install && \
-  bunx prisma generate && \
-  NEXT_TELEMETRY_DISABLED=1 bun run build
+RUN corepack enable && \
+  corepack prepare pnpm@latest --activate && \
+  pnpm install --prefer-offline && \
+  npx prisma generate && \
+  NEXT_TELEMETRY_DISABLED=1 pnpm run build
 
 # =========================
 # Runtime Stage
@@ -38,10 +40,8 @@ WORKDIR /app
 RUN mkdir -p /app/data
 
 # Install Docker CLI and other dependencies
-RUN apk add --no-cache openssl docker-cli su-exec sqlite python3
-RUN ln -sf python3 /usr/bin/python
+RUN apk add --no-cache openssl docker-cli su-exec sqlite
 RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
-RUN export npm_config_python=/usr/bin/python
 
 # Copy public directory from context
 COPY --link --chown=1000:1000 public ./public/
@@ -50,11 +50,13 @@ COPY --link --chmod=755 docker-entrypoint.sh /usr/local/bin/
 # Copy Next.js build output from builder
 COPY --link --from=builder --chown=1000:1000 /app/.next/standalone/ ./
 COPY --link --from=builder --chown=1000:1000 /app/.next/static/ ./.next/static
+#COPY --link --from=builder --chown=1000:1000 /app/node_modules/.prisma ./node_modules/.prisma
 COPY --link --from=builder --chown=1000:1000 /app/prisma ./prisma
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+# Set database URL to use the data directory
 ENV DATABASE_URL=file:/app/data/database.db
 
 EXPOSE $PORT
