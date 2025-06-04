@@ -2,6 +2,9 @@ name: Build and Publish Images
 on:
   release:
     types: [published]
+  push:
+    branches:
+    - main
 
 env:
   REGISTRY: ghcr.io
