@@ -15,7 +15,7 @@ ARG REVISION
 ENV CI=$CI
 
 # Install dependencies and build
-RUN bun install --frozen-lockfile && \
+RUN bun install && \
   bunx prisma generate && \
   NEXT_TELEMETRY_DISABLED=1 bun run build
 
