@@ -259,8 +259,8 @@ export async function restartContainer(id: string) {
 
 export async function clone() {
   return new Promise((resolve, reject) => {
-    const workingDir = process.env.WORKING_DIR;
-    const repoRoot = process.env.REPO_ROOT;
+    const workingDir = process.env.WORKING_DIR!;
+    const repoRoot = process.env.REPO_ROOT!;
 
     if (!workingDir || !repoRoot) {
       console.error(
