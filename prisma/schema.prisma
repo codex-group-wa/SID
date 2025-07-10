@@ -2,32 +2,31 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:/app/data/database.db"
+  provider = "postgresql"
+  url      = "postgresql://admin:password@db:5432/sid"
 }
 
 generator client {
-  provider      = "prisma-client-js"
-  previewFeatures = ["queryCompiler", "driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 model Stack {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  path      String
-  status    String
-  lastEvent String?
+  id          String    @id @default(uuid())
+  name        String    @unique
+  path        String
+  status      String
+  lastEvent   String?
   lastEventAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  events    Event[]  @relation("StackToEvents")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  events      Event[]   @relation("StackToEvents")
 }
 
 model Event {
   id        String   @id @default(uuid())
   type      String
   message   String
-  stackId   String?  // Optional relation to Stack
+  stackId   String? // Optional relation to Stack
   createdAt DateTime @default(now())
   stack     Stack?   @relation("StackToEvents", fields: [stackId], references: [id])
 }

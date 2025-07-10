@@ -1,77 +1,85 @@
-# =========================
-# Builder Stage
-# =========================
-FROM node:22-slim AS builder
+# Use the official Node.js Alpine image as base
+FROM node:22-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+
+# Set working directory
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# Install pnpm
+RUN npm install -g pnpm
 
-# Setup
-RUN mkdir -p config
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies (skip postinstall scripts to avoid Prisma generate)
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
 COPY . .
 
-ARG CI
-ARG BUILDTIME
-ARG VERSION
-ARG REVISION
-ENV CI=$CI
+# Generate Prisma client
+RUN pnpm prisma generate
 
-# Install dependencies and build
-RUN corepack enable && \
-    corepack prepare pnpm@latest --activate && \
-    pnpm install --prefer-offline && \
-    pnpm install better-sqlite3@12.2.0 \
-    npx prisma generate && \
-    NEXT_TELEMETRY_DISABLED=1 pnpm run build
+# Build the application
+RUN pnpm build
 
-# =========================
-# Runtime Stage
-# =========================
-FROM node:22-alpine AS runner
-
-LABEL org.opencontainers.image.title="SID"
-LABEL org.opencontainers.image.description="Manage your docker deployments with SID"
-LABEL org.opencontainers.image.url="https://github.com/declan-wade"
-LABEL org.opencontainers.image.documentation="https://github.com/declan-wade"
-LABEL org.opencontainers.image.source="https://github.com/declan-wade"
-LABEL org.opencontainers.image.licenses='Apache-2.0'
-
-# Setup
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# Create database directory
-RUN mkdir -p /app/data
+# Install required packages including Docker CLI
+RUN apk add --no-cache docker-cli docker-cli-compose su-exec git
 
-# Install Docker CLI and other dependencies
-RUN apk add --no-cache openssl docker-cli su-exec sqlite
-RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
+# Don't run production as root
+#RUN addgroup --system --gid 1001 nodejs
+#RUN adduser --system --uid 1001 nextjs
 
-# Copy public directory from context
-COPY --link --chown=1000:1000 public ./public/
-COPY --link --chmod=755 docker-entrypoint.sh /usr/local/bin/
+# Add nextjs user to docker group for Docker socket access
+#RUN addgroup -g 999 docker || true
+#RUN adduser nextjs docker
 
-# Copy Next.js build output from builder
-COPY --link --from=builder --chown=1000:1000 /app/.next/standalone/ ./
-COPY --link --from=builder --chown=1000:1000 /app/.next/static/ ./.next/static
-#COPY --link --from=builder --chown=1000:1000 /app/node_modules/.prisma ./node_modules/.prisma
-COPY --link --from=builder --chown=1000:1000 /app/node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3 ./node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3
-COPY --link --from=builder --chown=1000:1000 /app/prisma ./prisma
+# Copy the public folder from the project as this is not included in the build process
+COPY --from=builder /app/public ./public
 
-ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
-# Set database URL to use the data directory
-ENV DATABASE_URL=file:/app/data/database.db
+# Set the correct permission for prerender cache
+RUN mkdir .next
+#RUN chown nextjs:nodejs .next
 
-EXPOSE $PORT
+# Copy the build output (this includes node_modules and server.js)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-HEALTHCHECK --interval=20s --timeout=5s --start-period=30s \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:$PORT/api/healthcheck || exit 1
+# Copy Prisma schema for potential runtime needs
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["node", "server.js"]
+# Install pnpm in the final stage for migrations
+RUN npm install -g pnpm prisma
+
+# Switch to non-root user
+#USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV PORT 3000
+ENV NODE_ENV production
+
+RUN ls -la /app/
+
+# Start the application with migrations
+CMD ["sh", "-c", "echo 'Running Prisma migrations...' && npx prisma migrate deploy && echo 'Starting Next.js server...' && exec node server.js"]

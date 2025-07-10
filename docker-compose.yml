@@ -5,9 +5,19 @@ services:
       - "3000:3000"
     environment:
       - SID_ALLOWED_HOSTS=localhost:3000 ## Required: the host and port where the app is accessible
-      - REPO_ROOT=https://github.com/<username>/<reponame> ## Required: the URL of the repository root
-      - WORKING_DIR="/usr/src/sid" ## Do not change this unless you know what you are doing
+      - REPO_ROOT=https://<PAT>@github.com/<user>/<repo> ## Required: the URL of the repository root
+      - REPO_NAME=compose-v2
+      - WORKING_DIR=/app/data ## Do not change this unless you know what you are doing
       - GITHUB_WEBHOOK_SECRET="abc" ## This is used to verify the GitHub webhook
     volumes:
-      - ./sid/app/:/app/ ## The host path needs to end with /app/ 
+      - ./sid/app/data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./sid/app/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sid

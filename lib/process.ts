@@ -278,7 +278,7 @@ export async function clone() {
       return;
     }
 
-    const repoName = repoRoot.split("/").pop()?.replace(".git", "");
+    const repoName = process.env.REPO_NAME;
     const repoPath = `${workingDir}/${repoName}`;
 
     const checkDirCmd = `if [ -d "${repoPath}" ]; then
@@ -289,12 +289,13 @@ export async function clone() {
                               cd "${workingDir}" && git clone "${repoRoot}" && echo "${repoPath}";
                             fi`;
 
-    const ls = spawn("bash", ["-c", checkDirCmd]);
+    const ls = spawn("sh", ["-c", checkDirCmd]);
 
     let dataChunks: Buffer[] = [];
     let errorChunks: Buffer[] = [];
 
     ls.stdout.on("data", (data) => {
+      console.log(data);
       dataChunks.push(data);
     });
 
@@ -501,4 +502,81 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
 
   walk(rootDir);
   return results;
+}
+
+export async function runDockerComposeForPath(
+  path: string,
+): Promise<{ dir: string; result: string; error?: string }> {
+  let workingDir = process.env.WORKING_DIR;
+  if (!workingDir) {
+    throw new Error("WORKING_DIR environment variable is not set");
+  }
+
+  // Remove leading/trailing slashes and construct absolute directory path
+  const cleanPath = path.replace(/^\/|\/$/g, "");
+  const absDir = `${workingDir}/${cleanPath}`;
+
+  console.info(`Running docker compose in: ${absDir}`);
+
+  try {
+    const result = await new Promise<string>((resolve, reject) => {
+      const proc = spawn(
+        "docker",
+        ["compose", "up", "-d", "--remove-orphans"],
+        { cwd: absDir },
+      );
+      let output = "";
+      let error = "";
+
+      proc.stdout.on("data", (data) => {
+        output += data.toString();
+      });
+      proc.stderr.on("data", (data) => {
+        error += data.toString();
+      });
+      proc.on("close", (code) => {
+        if (code === 0) {
+          console.info(
+            `docker compose up succeeded in ${absDir}: ${output.trim()}`,
+          );
+          createEvent(
+            "Success",
+            `docker compose up succeeded in ${absDir}`,
+            cleanPath.split("/")[0],
+          );
+          resolve(output.trim());
+        } else {
+          console.error(
+            `docker compose up failed in ${absDir}: ${error.trim()}`,
+          );
+          createEvent(
+            "Error",
+            `docker compose up failed in ${absDir}: ${error.trim()}`,
+            cleanPath.split("/")[0],
+          );
+          reject(new Error(error.trim() || `Exited with code ${code}`));
+        }
+      });
+      proc.on("error", (err) => {
+        console.error(
+          `Failed to start docker compose in ${absDir}: ${err.message}`,
+        );
+        createEvent(
+          "Error",
+          `Failed to start docker compose in ${absDir}: ${err.message}`,
+          cleanPath.split("/")[0],
+        );
+        reject(err);
+      });
+    });
+    return { dir: absDir, result };
+  } catch (err: any) {
+    console.error(`Error running docker compose in ${absDir}: ${err.message}`);
+    createEvent(
+      "Error",
+      `Error running docker compose in ${absDir}: ${err.message}`,
+      cleanPath.split("/")[0],
+    );
+    return { dir: absDir, result: "", error: err.message };
+  }
 }

@@ -24,11 +24,13 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
+import { clone, runDockerComposeForPath } from "@/lib/process";
 
 const StackList = ({ stacks, handleCheck }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +43,7 @@ const StackList = ({ stacks, handleCheck }: any) => {
 
   async function handleSync() {
     try {
+      await clone();
       await syncStacks();
       handleCheck();
       toast.success("Stacks synced successfully!");
@@ -97,7 +100,7 @@ const StackList = ({ stacks, handleCheck }: any) => {
       </div>
       <h3 className="text-lg font-medium mb-2">No stacks found</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Get started by creating your first stack
+        Get started by importing your schema from GitHub
       </p>
       <Button onClick={() => handleSync()}>
         <FolderSync className="h-4 w-4 mr-2" />
@@ -110,8 +113,10 @@ const StackList = ({ stacks, handleCheck }: any) => {
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-xl font-bold">Stacks</CardTitle>
-          <CardDescription>Manage your application stacks</CardDescription>
+          <CardTitle className="text-xl font-bold">Stacks & Schema</CardTitle>
+          <CardDescription>
+            Manage your application stacks and deployment schema
+          </CardDescription>
         </div>
         <Button onClick={() => handleSync()}>
           <FolderSync className="h-4 w-4 mr-2" />
@@ -142,7 +147,9 @@ const StackList = ({ stacks, handleCheck }: any) => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Last Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Path</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Schema Path
+                  </TableHead>
                   <TableHead className="hidden md:table-cell">
                     Created
                   </TableHead>
@@ -151,6 +158,9 @@ const StackList = ({ stacks, handleCheck }: any) => {
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">
                     Last Deployed
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -190,6 +200,23 @@ const StackList = ({ stacks, handleCheck }: any) => {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
                       {formatDate(stack.events[0]?.createdAt)}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      <Button
+                        onClick={() =>
+                          runDockerComposeForPath(
+                            getShortPath(stack.path)
+                              .split("/")
+                              .slice(0, 3)
+                              .join("/"),
+                          )
+                        }
+                        className="w-7 h-7 px-1"
+                        variant="outline"
+                        size="icon"
+                      >
+                        <TrendingUp />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

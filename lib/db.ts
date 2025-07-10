@@ -1,13 +1,13 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSQLite3 } from "@prisma/adapter-better-sqlite3";
+//import { PrismaBetterSQLite3 } from "@prisma/adapter-better-sqlite3";
 import { findAllDockerComposeFiles } from "./process";
 
-const adapter = new PrismaBetterSQLite3({
-  url: "file:./prisma/dev.db",
-});
-const prisma = new PrismaClient({ adapter });
+// const adapter = new PrismaBetterSQLite3({
+//   url: "file:./prisma/dev.db",
+// });
+const prisma = new PrismaClient();
 
 export async function createStack(formData: any) {
   try {
