@@ -4,6 +4,13 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Setup
 RUN mkdir -p config
 COPY . .
@@ -16,10 +23,11 @@ ENV CI=$CI
 
 # Install dependencies and build
 RUN corepack enable && \
-  corepack prepare pnpm@latest --activate && \
-  pnpm install --prefer-offline && \
-  npx prisma generate && \
-  NEXT_TELEMETRY_DISABLED=1 pnpm run build
+    corepack prepare pnpm@latest --activate && \
+    pnpm install --prefer-offline && \
+    pnpm install better-sqlite3@12.2.0 \
+    npx prisma generate && \
+    NEXT_TELEMETRY_DISABLED=1 pnpm run build
 
 # =========================
 # Runtime Stage
@@ -51,6 +59,7 @@ COPY --link --chmod=755 docker-entrypoint.sh /usr/local/bin/
 COPY --link --from=builder --chown=1000:1000 /app/.next/standalone/ ./
 COPY --link --from=builder --chown=1000:1000 /app/.next/static/ ./.next/static
 #COPY --link --from=builder --chown=1000:1000 /app/node_modules/.prisma ./node_modules/.prisma
+COPY --link --from=builder --chown=1000:1000 /app/node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3 ./node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3
 COPY --link --from=builder --chown=1000:1000 /app/prisma ./prisma
 
 ENV NODE_ENV=production
@@ -62,7 +71,7 @@ ENV DATABASE_URL=file:/app/data/database.db
 EXPOSE $PORT
 
 HEALTHCHECK --interval=20s --timeout=5s --start-period=30s \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:$PORT/api/healthcheck || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:$PORT/api/healthcheck || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server.js"]
