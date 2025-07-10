@@ -515,7 +515,7 @@ export async function runDockerComposeForPath(
   // Remove leading/trailing slashes and construct absolute directory path
   const cleanPath = path.replace(/^\/|\/$/g, "");
   const absDir = `${workingDir}/${cleanPath}`;
-
+  console.log("stack name: ", cleanPath.split("/")[1]);
   console.info(`Running docker compose in: ${absDir}`);
 
   try {
@@ -542,7 +542,7 @@ export async function runDockerComposeForPath(
           createEvent(
             "Success",
             `docker compose up succeeded in ${absDir}`,
-            cleanPath.split("/")[0],
+            cleanPath.split("/")[1],
           );
           resolve(output.trim());
         } else {
@@ -552,7 +552,7 @@ export async function runDockerComposeForPath(
           createEvent(
             "Error",
             `docker compose up failed in ${absDir}: ${error.trim()}`,
-            cleanPath.split("/")[0],
+            cleanPath.split("/")[1],
           );
           reject(new Error(error.trim() || `Exited with code ${code}`));
         }
@@ -564,7 +564,7 @@ export async function runDockerComposeForPath(
         createEvent(
           "Error",
           `Failed to start docker compose in ${absDir}: ${err.message}`,
-          cleanPath.split("/")[0],
+          cleanPath.split("/")[1],
         );
         reject(err);
       });
@@ -575,7 +575,7 @@ export async function runDockerComposeForPath(
     createEvent(
       "Error",
       `Error running docker compose in ${absDir}: ${err.message}`,
-      cleanPath.split("/")[0],
+      cleanPath.split("/")[1],
     );
     return { dir: absDir, result: "", error: err.message };
   }

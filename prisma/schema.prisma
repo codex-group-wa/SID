@@ -3,7 +3,7 @@
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://admin:password@db:5432/sid"
+  url      = "postgresql://admin:password@localhost:5432/sid"
 }
 
 generator client {

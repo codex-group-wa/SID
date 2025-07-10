@@ -3,6 +3,7 @@
 import { PrismaClient } from "@prisma/client";
 //import { PrismaBetterSQLite3 } from "@prisma/adapter-better-sqlite3";
 import { findAllDockerComposeFiles } from "./process";
+import { revalidatePath } from "next/cache";
 
 // const adapter = new PrismaBetterSQLite3({
 //   url: "file:./prisma/dev.db",
@@ -23,6 +24,7 @@ export async function createStack(formData: any) {
     });
     console.info(`[createStack] Stack created: ${formData.name}`);
     createEvent("Success", `Stack created: ${formData.name}`);
+    revalidatePath("/");
     return response;
   } catch (err: any) {
     console.error(`[createStack] Error creating stack: ${err.message}`);
@@ -73,6 +75,7 @@ export async function syncStacks() {
   console.info(
     `[syncStacks] Finished syncing stacks. Total: ${stacksCreated.length}`,
   );
+  revalidatePath("/");
   return stacksCreated;
 }
 
@@ -114,6 +117,7 @@ export async function createEvent(
       },
     });
     console.info(`[createEvent] Event created: ${response.id}`);
+    revalidatePath("/");
     return response;
   } catch (err: any) {
     console.error(`[createEvent] Error creating event: ${err.message}`);

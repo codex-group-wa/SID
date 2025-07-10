@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import {
   Card,
@@ -32,7 +33,7 @@ import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
 import { clone, runDockerComposeForPath } from "@/lib/process";
 
-const StackList = ({ stacks, handleCheck }: any) => {
+const StackList = ({ stacks }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
   const filteredStacks = stacks.filter(
     (stack: { name: string; slug: string; path: string }) =>
@@ -45,11 +46,9 @@ const StackList = ({ stacks, handleCheck }: any) => {
     try {
       await clone();
       await syncStacks();
-      handleCheck();
       toast.success("Stacks synced successfully!");
     } catch (error) {
       console.error("Error syncing stacks:", error);
-      handleCheck();
       toast.error("Failed to sync stacks. Please try again.");
     }
   }
