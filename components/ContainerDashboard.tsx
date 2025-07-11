@@ -40,7 +40,7 @@ interface Container {
   Mounts: string;
 }
 
-const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
+const ContainerDashboard: React.FC<any> = ({ containers }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -62,7 +62,6 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
         } else if (response.status === "success") {
           toast.success(`Container ${id} stopped successfully!`);
         }
-        handleCheck();
       } else if (action === "Restart") {
         const response: any = await restartContainer(id);
         console.info(response);
@@ -71,7 +70,6 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
         } else if (response.status === "success") {
           toast.success(`Container ${id} restarted successfully!`);
         }
-        handleCheck();
       } else if (action === "Kill") {
         const response: any = await killContainer(id);
         console.info(response);
@@ -80,7 +78,6 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
         } else if (response.status === "success") {
           toast.success(`Container ${id} killed successfully!`);
         }
-        handleCheck();
       }
     } finally {
       setLoadingId(null);
@@ -181,6 +178,7 @@ const ContainerDashboard: React.FC<any> = ({ containers, handleCheck }) => {
                           <ActionButtons
                             containerId={container.ID}
                             handleAction={handleAction}
+                            containerStatus={container.State}
                           />
                         )}
                       </TableCell>

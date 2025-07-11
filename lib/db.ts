@@ -117,7 +117,6 @@ export async function createEvent(
       },
     });
     console.info(`[createEvent] Event created: ${response.id}`);
-    revalidatePath("/");
     return response;
   } catch (err: any) {
     console.error(`[createEvent] Error creating event: ${err.message}`);

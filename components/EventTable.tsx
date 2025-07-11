@@ -129,7 +129,7 @@ const EventTable: React.FC<EventTableProps> = ({
                         {typeIcon(event.type)}
                         <span className="capitalize">{event.type}</span>
                       </TableCell>
-                      <TableCell>{event.message}</TableCell>
+                      <TableCell>{event.message.slice(0, 70)}...</TableCell>
                       <TableCell className="hidden md:table-cell">
                         {event.stack?.name || (
                           <span className="text-gray-400 italic">None</span>

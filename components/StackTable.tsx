@@ -26,15 +26,23 @@ import {
   CheckCircle,
   Info,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
 import { clone, runDockerComposeForPath } from "@/lib/process";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 const StackList = ({ stacks }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const filteredStacks = stacks.filter(
     (stack: { name: string; slug: string; path: string }) =>
       stack.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,6 +58,20 @@ const StackList = ({ stacks }: any) => {
     } catch (error) {
       console.error("Error syncing stacks:", error);
       toast.error("Failed to sync stacks. Please try again.");
+    }
+  }
+
+  async function handleUp(stack: any) {
+    toast.info(`Deploying stack. This may take several minutes...`);
+    setLoadingId(stack.id);
+    try {
+      const response = await runDockerComposeForPath(
+        getShortPath(stack.path).split("/").slice(0, 3).join("/"),
+      );
+      toast.success("Stack deployed successfully!");
+      setLoadingId(null);
+    } catch (error) {
+      toast.error("Failed to deploy stack. Please try again.");
     }
   }
 
@@ -201,21 +223,29 @@ const StackList = ({ stacks }: any) => {
                       {formatDate(stack.events[0]?.createdAt)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">
-                      <Button
-                        onClick={() =>
-                          runDockerComposeForPath(
-                            getShortPath(stack.path)
-                              .split("/")
-                              .slice(0, 3)
-                              .join("/"),
-                          )
-                        }
-                        className="w-7 h-7 px-1"
-                        variant="outline"
-                        size="icon"
-                      >
-                        <TrendingUp />
-                      </Button>
+                      {loadingId === stack.id ? (
+                        <span className="flex items-center justify-left">
+                          <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                        </span>
+                      ) : (
+                        <TooltipProvider key={stack.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={() => handleUp(stack)}
+                                className="w-7 h-7 px-1"
+                                variant="outline"
+                                size="icon"
+                              >
+                                <TrendingUp />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Bring Up</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

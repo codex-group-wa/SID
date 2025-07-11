@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { RotateCw, X, Zap } from "lucide-react";
+import { RotateCw, X, Zap, Play } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,17 +10,24 @@ import {
 interface ActionButtonsProps {
   containerId: string;
   handleAction: (id: string, action: string) => void;
+  containerStatus: string;
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   containerId,
   handleAction,
+  containerStatus,
 }) => {
-  const actions = [
+  const runningActions = [
     { type: "Restart", icon: <RotateCw /> },
     { type: "Stop", icon: <X /> },
     { type: "Kill", icon: <Zap /> },
   ];
+
+  const stoppedActions = [{ type: "Start", icon: <Play /> }];
+
+  const actions =
+    containerStatus === "running" ? runningActions : stoppedActions;
 
   return (
     <div className="flex space-x-1">

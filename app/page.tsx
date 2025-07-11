@@ -1,5 +1,4 @@
 import { check } from "../lib/process";
-import React from "react";
 import ContainerDashboard from "@/components/ContainerDashboard";
 import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";

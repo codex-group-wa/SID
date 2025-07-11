@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { readdirSync, statSync } from "fs";
 import { join } from "path";
 import { createEvent } from "./db";
+import { revalidatePath } from "next/cache";
 
 export async function check() {
   return new Promise((resolve, reject) => {
@@ -123,6 +124,7 @@ export async function stopContainer(id: string) {
         const rawOutput = Buffer.concat(dataChunks).toString().trim();
         console.info(`stopContainer(${id}) success: ${rawOutput}`);
         createEvent("Success", `Container ${id} stopped successfully`);
+        revalidatePath("/");
         resolve({ status: "success", output: rawOutput });
       } catch (err) {
         console.error(
@@ -132,6 +134,7 @@ export async function stopContainer(id: string) {
           "Error",
           `Error processing output: ${(err as Error).message}`,
         );
+        revalidatePath("/");
         reject(new Error(`Error processing output: ${(err as Error).message}`));
       }
     });
@@ -183,6 +186,7 @@ export async function killContainer(id: string) {
         const rawOutput = Buffer.concat(dataChunks).toString().trim();
         console.info(`killContainer(${id}) success: ${rawOutput}`);
         createEvent("Success", `Container ${id} stopped successfully`);
+        revalidatePath("/");
         resolve({ status: "success", output: rawOutput });
       } catch (err) {
         console.error(
@@ -192,6 +196,7 @@ export async function killContainer(id: string) {
           "Error",
           `Error processing output: ${(err as Error).message}`,
         );
+        revalidatePath("/");
         reject(new Error(`Error processing output: ${(err as Error).message}`));
       }
     });
@@ -242,6 +247,7 @@ export async function restartContainer(id: string) {
         const rawOutput = Buffer.concat(dataChunks).toString().trim();
         console.info(`restartContainer(${id}) success: ${rawOutput}`);
         createEvent("Success", `Container ${id} restarted successfully`);
+        revalidatePath("/");
         resolve({ status: "success", output: rawOutput });
       } catch (err) {
         console.error(
@@ -251,6 +257,7 @@ export async function restartContainer(id: string) {
           "Error",
           `Error processing output: ${(err as Error).message}`,
         );
+        revalidatePath("/");
         reject(new Error(`Error processing output: ${(err as Error).message}`));
       }
     });
@@ -342,6 +349,7 @@ export async function clone() {
             "Info",
             `Repository already exists, pulled latest changes at ${resultPath}`,
           );
+          revalidatePath("/");
           resolve({
             status: "success",
             path: resultPath,
@@ -350,6 +358,7 @@ export async function clone() {
         } else {
           console.info(`clone() repository newly cloned to ${resultPath}.`);
           createEvent("Info", `Repository newly cloned to ${resultPath}`);
+          revalidatePath("/");
           resolve({
             status: "success",
             path: resultPath,
@@ -364,6 +373,7 @@ export async function clone() {
           "Error",
           `Error processing output: ${(err as Error).message}`,
         );
+        revalidatePath("/");
         reject(new Error(`Error processing output: ${(err as Error).message}`));
       }
     });
@@ -544,6 +554,7 @@ export async function runDockerComposeForPath(
             `docker compose up succeeded in ${absDir}`,
             cleanPath.split("/")[1],
           );
+          revalidatePath("/");
           resolve(output.trim());
         } else {
           console.error(
@@ -554,6 +565,7 @@ export async function runDockerComposeForPath(
             `docker compose up failed in ${absDir}: ${error.trim()}`,
             cleanPath.split("/")[1],
           );
+          revalidatePath("/");
           reject(new Error(error.trim() || `Exited with code ${code}`));
         }
       });
@@ -566,6 +578,7 @@ export async function runDockerComposeForPath(
           `Failed to start docker compose in ${absDir}: ${err.message}`,
           cleanPath.split("/")[1],
         );
+        revalidatePath("/");
         reject(err);
       });
     });
@@ -577,6 +590,7 @@ export async function runDockerComposeForPath(
       `Error running docker compose in ${absDir}: ${err.message}`,
       cleanPath.split("/")[1],
     );
+    revalidatePath("/");
     return { dir: absDir, result: "", error: err.message };
   }
 }
