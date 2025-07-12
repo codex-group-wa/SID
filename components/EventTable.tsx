@@ -26,6 +26,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const typeIcon = (type: string) => {
   switch (type.toLowerCase()) {
@@ -52,10 +54,12 @@ const EventTable: React.FC<EventTableProps> = ({
   page,
   total,
   pageSize = 10,
-  onPageChange,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentPage = Number(searchParams.get("page")) || 1;
   const filteredEvents = events.filter(
     (event) =>
       event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,8 +69,14 @@ const EventTable: React.FC<EventTableProps> = ({
       ),
   );
 
+  const createPageURL = (pageNumber: number | string) => {
+    console.log("Creating page URL for page:", pageNumber);
+    const params = new URLSearchParams(searchParams);
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  // If searching, show filtered results only, otherwise use paginated events from parent
   const displayEvents = searchTerm ? filteredEvents.slice(0, pageSize) : events;
 
   const formatDate = (dateString: string) => {
@@ -77,13 +87,18 @@ const EventTable: React.FC<EventTableProps> = ({
     }
   };
 
-  const handlePrev = () => onPageChange && onPageChange(Math.max(1, page - 1));
-  const handleNext = () =>
-    onPageChange && onPageChange(Math.min(totalPages, page + 1));
+  const handlePrev = () => {
+    const url = createPageURL(Math.max(1, page - 1));
+    router.push(url);
+  };
+  const handleNext = () => {
+    const url = createPageURL(Math.min(totalPages, page + 1));
+    router.push(url);
+  };
 
   // Reset to first page on search
   React.useEffect(() => {
-    if (onPageChange) onPageChange(1);
+    createPageURL(1);
   }, [searchTerm]);
 
   return (

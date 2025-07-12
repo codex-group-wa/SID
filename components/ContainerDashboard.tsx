@@ -78,6 +78,14 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
         } else if (response.status === "success") {
           toast.success(`Container ${id} killed successfully!`);
         }
+      } else if (action === "Start") {
+        const response: any = await restartContainer(id);
+        console.info(response);
+        if (response.status === "error") {
+          toast.error(`Failed to start container ${id}`);
+        } else if (response.status === "success") {
+          toast.success(`Container ${id} started successfully!`);
+        }
       }
     } finally {
       setLoadingId(null);

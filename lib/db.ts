@@ -1,13 +1,9 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
-//import { PrismaBetterSQLite3 } from "@prisma/adapter-better-sqlite3";
 import { findAllDockerComposeFiles } from "./process";
 import { revalidatePath } from "next/cache";
 
-// const adapter = new PrismaBetterSQLite3({
-//   url: "file:./prisma/dev.db",
-// });
 const prisma = new PrismaClient();
 
 export async function createStack(formData: any) {
@@ -124,7 +120,7 @@ export async function createEvent(
   }
 }
 
-export async function getEvents(page = 1, pageSize = 10) {
+export async function getEvents(page: number, pageSize: number) {
   try {
     const skip = (page - 1) * pageSize;
     console.info(
