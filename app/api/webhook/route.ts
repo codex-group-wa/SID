@@ -11,29 +11,37 @@ export async function POST(request: Request) {
     return new Response("Webhook secret not configured", { status: 500 });
   }
 
-  // Get raw body as buffer for signature validation
-
   // Get signature headers
-  // const sig256 = request.headers.get("x-hub-signature-256");
-  // const sig1 = request.headers.get("x-hub-signature");
+  const sig256 = request.headers.get("x-hub-signature-256");
+  const sig1 = request.headers.get("x-hub-signature");
 
-  // // Compute HMAC digests
-  // const hmac256 =
-  //   "sha256=" +
-  //   crypto.createHmac("sha256", secret).update(bodyBuffer).digest("hex");
-  // const hmac1 =
-  //   "sha1=" +
-  //   crypto.createHmac("sha1", secret).update(bodyBuffer).digest("hex");
+  // Compute HMAC digests
+  const hmac256 = crypto.createHmac("sha256", secret).update(bodyBuffer).digest("hex");
+  const hmac1 = crypto.createHmac("sha1", secret).update(bodyBuffer).digest("hex");
 
-  // // Validate signatures
-  // const valid =
-  //   (sig256 &&
-  //     crypto.timingSafeEqual(Buffer.from(sig256), Buffer.from(hmac256))) ||
-  //   (sig1 && crypto.timingSafeEqual(Buffer.from(sig1), Buffer.from(hmac1)));
+  console.log(hmac256, hmac1);
+  
+  // Validate signatures
+  let valid = false;
+  if (sig256 && sig256.startsWith("sha256=")) {
+    const sigBuf = Buffer.from(sig256.slice(7), "hex");
+    const hmacBuf = Buffer.from(hmac256, "hex");
+    if (sigBuf.length === hmacBuf.length && crypto.timingSafeEqual(sigBuf, hmacBuf)) {
+      valid = true;
+    }
+  }
+  if (!valid && sig1 && sig1.startsWith("sha1=")) {
+    const sigBuf = Buffer.from(sig1.slice(5), "hex");
+    const hmacBuf = Buffer.from(hmac1, "hex");
+    if (sigBuf.length === hmacBuf.length && crypto.timingSafeEqual(sigBuf, hmacBuf)) {
+      valid = true;
+    }
+  }
 
-  // if (!valid) {
-  //   return new Response("Invalid signature", { status: 401 });
-  // }
+  if (!valid) {
+    console.error("Invalid webhook signature");
+    return new Response("Invalid signature", { status: 401 });
+  }
 
   // Parse JSON body after validation
   const body = JSON.parse(bodyBuffer.toString());
