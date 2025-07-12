@@ -1,71 +1,108 @@
 "use server";
 
 import { clone, runDockerComposeForChangedDirs } from "@/lib/process";
-import crypto from "crypto";
+import { Webhooks } from "@octokit/webhooks";
+import crypto from 'crypto';
+
+const webhooks = new Webhooks({
+  secret: process.env.GITHUB_WEBHOOK_SECRET || "",
+});
 
 export async function POST(request: Request) {
-  const rawBody = await request.arrayBuffer();
-  const bodyBuffer = Buffer.from(rawBody);
-  const secret = process.env.GITHUB_WEBHOOK_SECRET;
-  if (!secret) {
-    return new Response("Webhook secret not configured", { status: 500 });
-  }
-
-  // Get signature headers
-  const sig256 = request.headers.get("x-hub-signature-256");
-  const sig1 = request.headers.get("x-hub-signature");
-
-  // Compute HMAC digests
-  const hmac256 = crypto.createHmac("sha256", secret).update(bodyBuffer).digest("hex");
-  const hmac1 = crypto.createHmac("sha1", secret).update(bodyBuffer).digest("hex");
-
-  console.log(hmac256, hmac1);
-  
-  // Validate signatures
-  let valid = false;
-  if (sig256 && sig256.startsWith("sha256=")) {
-    const sigBuf = Buffer.from(sig256.slice(7), "hex");
-    const hmacBuf = Buffer.from(hmac256, "hex");
-    if (sigBuf.length === hmacBuf.length && crypto.timingSafeEqual(sigBuf, hmacBuf)) {
-      valid = true;
+  try {
+    // Method 1: Using arrayBuffer and Buffer
+    const rawBody = await request.arrayBuffer();
+    const bodyBuffer = Buffer.from(rawBody);
+    const body = bodyBuffer.toString('utf8');
+    
+    // Get the signature from headers
+    const signature = request.headers.get("x-hub-signature-256");
+    
+    console.log("Webhook Secret exists:", !!process.env.GITHUB_WEBHOOK_SECRET);
+    console.log("Signature received:", signature);
+    console.log("Body length:", body.length);
+    
+    if (!signature) {
+      return new Response("Missing signature", { status: 401 });
     }
-  }
-  if (!valid && sig1 && sig1.startsWith("sha1=")) {
-    const sigBuf = Buffer.from(sig1.slice(5), "hex");
-    const hmacBuf = Buffer.from(hmac1, "hex");
-    if (sigBuf.length === hmacBuf.length && crypto.timingSafeEqual(sigBuf, hmacBuf)) {
-      valid = true;
+
+    // Manual verification using crypto
+    const expectedSignature = 'sha256=' + crypto
+      .createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET!)
+      .update(bodyBuffer) // Use the buffer directly
+      .digest('hex');
+    
+    console.log("Expected signature:", expectedSignature);
+    console.log("Signatures match:", signature === expectedSignature);
+
+    // Use crypto.timingSafeEqual for secure comparison
+    const sigBuffer = Buffer.from(signature, 'utf8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    
+    const isValid = sigBuffer.length === expectedBuffer.length && 
+                   crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+
+    if (!isValid) {
+      console.log("Signature validation failed");
+      return new Response("Invalid signature", { status: 401 });
     }
-  }
 
-  if (!valid) {
-    console.error("Invalid webhook signature");
-    return new Response("Invalid signature", { status: 401 });
-  }
+    console.log("Signature validation successful");
 
-  // Parse JSON body after validation
-  const body = JSON.parse(bodyBuffer.toString());
-  //console.log(body);
+    // Parse the JSON payload after verification
+    const payload = JSON.parse(body);
+    
+    // Clone the repository
+    const response: any = await clone();
 
-  const response: any = await clone();
-  console.log(response);
-  const payload: any = [];
-  const commits = body.commits;
-  console.log(`Cloned ${commits.length} commits from the repository.`);
-  commits.forEach((commit: any) => {
-    console.log(`Commit: ${commit.id} - ${commit.message}`);
-    console.log(commit.modified, commit.added);
-    commit.modified.forEach((file: string) => {
-      console.log(`Modified file: ${file}`);
-      payload.push(file);
+    // Process commits
+    const changedFiles: string[] = [];
+    const commits = payload.commits || [];
+    
+    console.log(`Processing ${commits.length} commits from the repository.`);
+    
+    commits.forEach((commit: any) => {
+      console.log(`Commit: ${commit.id} - ${commit.message}`);
+      
+      // Process modified files
+      if (commit.modified) {
+        commit.modified.forEach((file: string) => {
+          console.log(`Modified file: ${file}`);
+          changedFiles.push(file);
+        });
+      }
+      
+      // Process added files
+      if (commit.added) {
+        commit.added.forEach((file: string) => {
+          console.log(`Added file: ${file}`);
+          changedFiles.push(file);
+        });
+      }
+      
+      // Process removed files (optional)
+      if (commit.removed) {
+        commit.removed.forEach((file: string) => {
+          console.log(`Removed file: ${file}`);
+          changedFiles.push(file);
+        });
+      }
     });
-    commit.added.forEach((file: string) => {
-      console.log(`Added file: ${file}`);
-      payload.push(file);
-    });
-  });
-  console.log(`Payload: ${payload}`);
-  runDockerComposeForChangedDirs(payload);
-  console.log("Docker Compose run completed for changed directories.");
-  return new Response("Done", { status: 200 });
+    
+    console.log(`Changed files: ${changedFiles.join(', ')}`);
+    
+    // Run Docker Compose for changed directories
+    if (changedFiles.length > 0) {
+      await runDockerComposeForChangedDirs(changedFiles);
+      console.log("Docker Compose run completed for changed directories.");
+    } else {
+      console.log("No files changed, skipping Docker Compose run.");
+    }
+    
+    return new Response("Webhook processed successfully", { status: 200 });
+    
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    return new Response("Internal server error", { status: 500 });
+  }
 }

@@ -56,7 +56,6 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
     try {
       if (action === "Stop") {
         const response: any = await stopContainer(id);
-        console.info(response);
         if (response.status === "error") {
           toast.error(`Failed to stop container ${id}`);
         } else if (response.status === "success") {
@@ -64,7 +63,6 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
         }
       } else if (action === "Restart") {
         const response: any = await restartContainer(id);
-        console.info(response);
         if (response.status === "error") {
           toast.error(`Failed to restart container ${id}`);
         } else if (response.status === "success") {
@@ -72,7 +70,6 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
         }
       } else if (action === "Kill") {
         const response: any = await killContainer(id);
-        console.info(response);
         if (response.status === "error") {
           toast.error(`Failed to kill container ${id}`);
         } else if (response.status === "success") {
@@ -80,7 +77,6 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
         }
       } else if (action === "Start") {
         const response: any = await restartContainer(id);
-        console.info(response);
         if (response.status === "error") {
           toast.error(`Failed to start container ${id}`);
         } else if (response.status === "success") {
@@ -170,7 +166,7 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                       <TableCell className="hidden md:table-cell">
                         {container.CreatedAt.split(" ")[0]}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell font-mono text-xs">
+                      <TableCell className="hidden md:table-cell font-mono truncate text-xs">
                         {container.Ports}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">

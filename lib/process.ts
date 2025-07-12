@@ -302,7 +302,6 @@ export async function clone() {
     let errorChunks: Buffer[] = [];
 
     ls.stdout.on("data", (data) => {
-      console.log(data);
       dataChunks.push(data);
     });
 

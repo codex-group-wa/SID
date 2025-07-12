@@ -16,7 +16,6 @@ export default async function Home(props: {
   let containers = [];
   const response: any = await check();
   containers = response.containers;
-  console.log(containers);
   const stacks = await getStacks();
   const { events, total } = await getEvents(currentPage, pageSize);
 
