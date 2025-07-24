@@ -1,32 +1,22 @@
 "use server";
 
 import { clone, runDockerComposeForChangedDirs } from "@/lib/process";
-import { Webhooks } from "@octokit/webhooks";
-
-const webhooks = new Webhooks({
-  secret: "abc",
-});
+import { verify } from "@octokit/webhooks-methods";
 
 export async function POST(request: Request) {
   try {
-    // Method 1: Using arrayBuffer and Buffer
-    //   const rawBody = await request.arrayBuffer();
-    //   const bodyBuffer = Buffer.from(rawBody);
     const body = await request.text();
-    // console.log(body);
-
-    // Get the signature from headers
-    const signature = request.headers.get("x-hub-signature-256");
-    console.log(signature);
+    const signature = request.headers.get("X-Hub-Signature-256") ?? "";
 
     if (!signature) {
       return new Response("Missing signature", { status: 401 });
     }
 
-    const isValid = await webhooks.verify(body, signature);
-    console.info("###");
-    console.info(isValid);
-    console.info("###");
+    const isValid = await verify(
+      process.env.GITHUB_WEBHOOK_SECRET || "",
+      body,
+      signature,
+    );
 
     if (!isValid) {
       console.log("Signature validation failed");
@@ -39,7 +29,7 @@ export async function POST(request: Request) {
     const payload = JSON.parse(body);
 
     // Clone the repository
-    const response: any = await clone();
+    await clone();
 
     // Process commits
     const changedFiles: string[] = [];
