@@ -8,6 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Table,
   TableBody,
   TableCell,
@@ -132,9 +138,7 @@ const EventTable: React.FC<EventTableProps> = ({
                     <TableHead className="hidden md:table-cell">
                       Stack
                     </TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Timestamp
-                    </TableHead>
+                    <TableHead className="md:table-cell">Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -144,13 +148,26 @@ const EventTable: React.FC<EventTableProps> = ({
                         {typeIcon(event.type)}
                         <span className="capitalize">{event.type}</span>
                       </TableCell>
-                      <TableCell>{event.message}</TableCell>
+                      <TooltipProvider key={event.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <TableCell className="font-mono text-xs truncate max-w-xs sm:max-w-lg">
+                              {event.message}
+                            </TableCell>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="wrap-normal max-w-lg font-mono text-xs">
+                              {event.message}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <TableCell className="hidden md:table-cell">
                         {event.stack?.name || (
                           <span className="text-gray-400 italic">None</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-gray-500 text-sm">
+                      <TableCell className="md:table-cell text-gray-500 text-sm">
                         {formatDate(event.createdAt)}
                       </TableCell>
                     </TableRow>

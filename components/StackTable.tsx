@@ -43,11 +43,8 @@ import {
 const StackList = ({ stacks }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const filteredStacks = stacks.filter(
-    (stack: { name: string; slug: string; path: string }) =>
-      stack.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stack.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stack.path.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredStacks = stacks.filter((stack: { name: string }) =>
+    stack.name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   async function handleSync() {
@@ -135,12 +132,12 @@ const StackList = ({ stacks }: any) => {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-xl font-bold">Stacks & Schema</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             Manage your application stacks and deployment schema
           </CardDescription>
         </div>
-        <Button onClick={() => handleSync()}>
-          <FolderSync className="h-4 w-4 mr-2" />
+        <Button size="sm" onClick={() => handleSync()}>
+          <FolderSync className="hidden sm:block h-4 w-4 mr-2" />
           Sync from GitHub
         </Button>
       </CardHeader>
@@ -180,9 +177,7 @@ const StackList = ({ stacks }: any) => {
                   <TableHead className="hidden lg:table-cell">
                     Last Deployed
                   </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    Actions
-                  </TableHead>
+                  <TableHead className="lg:table-cell">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,7 +217,7 @@ const StackList = ({ stacks }: any) => {
                     <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
                       {formatDate(stack.events[0]?.createdAt)}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">
+                    <TableCell className="lg:table-cell text-sm">
                       {loadingId === stack.id ? (
                         <span className="flex items-center justify-left">
                           <Loader2 className="animate-spin h-5 w-5 text-gray-500" />

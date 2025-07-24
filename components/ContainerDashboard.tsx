@@ -18,14 +18,11 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
-  ChevronRight,
-  Loader2,
-  RotateCw,
-  Search,
-  StopCircle,
-  X,
-  Zap,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Loader2, Search } from "lucide-react";
 import ActionButtons from "./ActionButtons";
 import { restartContainer, stopContainer, killContainer } from "@/lib/process";
 import { toast } from "sonner";
@@ -166,14 +163,32 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                       <TableCell className="hidden md:table-cell">
                         {container.CreatedAt.split(" ")[0]}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell font-mono truncate text-xs">
-                        {container.Ports}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">
-                        {container.Mounts}
-                      </TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <TableCell className="hidden md:table-cell font-mono truncate max-w-lg text-xs">
+                            {container.Ports}
+                          </TableCell>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="wrap-normal max-w-lg font-mono">
+                            {container.Ports}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <TableCell className="hidden lg:table-cell text-xs max-w-xs">
+                            {container.Mounts}
+                          </TableCell>
+                        </TooltipTrigger>
 
-                      <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">
+                        <TooltipContent>
+                          <p className="wrap-normal max-w-lg">
+                            {container.Mounts}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <TableCell className="lg:table-cell text-xs truncate max-w-xs">
                         {loadingId === container.ID ? (
                           <span className="flex items-center justify-center">
                             <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
