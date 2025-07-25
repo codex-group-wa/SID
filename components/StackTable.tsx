@@ -18,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   Search,
-  Plus,
   FileBox,
   FolderTree,
   FolderSync,
@@ -33,12 +32,7 @@ import { formatDistanceToNow, formatISO } from "date-fns";
 import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
 import { clone, runDockerComposeForPath } from "@/lib/process";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const StackList = ({ stacks }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,6 +54,8 @@ const StackList = ({ stacks }: any) => {
 
   async function handleUp(stack: any) {
     toast.info(`Deploying stack. This may take several minutes...`);
+    await clone();
+    await syncStacks();
     setLoadingId(stack.id);
     try {
       await runDockerComposeForPath(

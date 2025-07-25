@@ -1,7 +1,12 @@
 {
   "name": "sid",
-  "version": "0.1.0",
-  "private": true,
+  "homepage": "https://github.com/declan-wade/SID",
+  "version": "1.0.0",
+  "license": "MIT License",
+  "private": false,
+  "bugs": {
+    "url": "https://github.com/declan-wade/SID/issues"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --experimental-build-mode compile",
