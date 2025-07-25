@@ -2,6 +2,8 @@
 
 # SID - Simple Integration & Deployment
 
+<img src="https://github.com/user-attachments/assets/a1bdd6fd-1e7f-4f07-8a0b-60f947053434" width="800" alt="sid screenshot">
+
 SID is an opinionated, (almost) no-config service to provide a very simple way to have reliable GitOps for Docker Compose and GitHub.
 
 This project has three key objectives:
