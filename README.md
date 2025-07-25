@@ -15,13 +15,13 @@ The interface of both these apps (particularly Komodo) can also be overwhelming 
 
 ## Features
 
-- With a correctly configured docker-compose file for SID, and a repo structured as per below - the service is ready to go, no further 
-- Provides a listener for GitHub event webhooks with signature verification 
-- Context-aware deployments - the service checks to see which `docker-compose` files changed in the webhook event and only redeploys the stacks that have changed. No need for different branches or tags. 
-- Simple host validation out-of-the-box to provide basic security without needing an auth system
-- A simple web interface to view activity logs, review stack status, container list and basic controls to start, stop and remove individual containers
-- Basic database to capture and persist activity logs long-term
-- The container includes `git`, so this does not need to be provided on the client
+- 🚀 With a correctly configured `docker-compose` file for SID, and a repo structured as per below - the service is ready to go, no further setup or configuration required!
+- 🪝 Provides a listener for GitHub event webhooks with signature verification 
+- 💡 Context-aware deployments - the service checks to see which `docker-compose` files changed in the webhook event and only redeploys the stacks that have changed. No need for different branches or tags. 
+- 🔐 Simple host validation out-of-the-box to provide basic security without needing an auth system
+- 👍 A simple web interface to view activity logs, review stack status, container list and basic controls to start, stop and remove individual containers
+- 📈 Basic database to capture and persist activity logs long-term
+- 🐙 The container includes `git`, so this does not need to be provided on the client
 
 ## Getting Started
 
@@ -116,7 +116,23 @@ Further information is available below on each config option.
 
 Access the application by navigating to [http://localhost:3000](http://localhost:3000) (or your configured port) in your web browser.
 
+## Using the Webhook
+
+> [!WARNING]
+> Exposing **anything** to the web poses some risk. Although SID has middleware to restrict access to the Web UI, **always** take appropriate measures to secure your endpoints, such as using a reverse proxy or zero-trust tunnel. 
+
+The application exposes a `POST` endpoint on the `/api/webhook` route, which will need to be exposed to the web appropriately. For instance, if your service has an IP address of `10.1.1.10` and you have left the port as the default `3000`, then the route would be `10.1.1.10:3000/api/webhook`
+
+Follow the instructions [here](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-a-repository-webhook) on how to setup webhooks on your repo. **Please note** the following:
+
+Step 6 - use the `application/json` content type
+
+Step 7 - specifies this is optional, however SID is expecting a secret to validate when a request is triggered, so something needs to be provided here.
+
+Upon saving a new webhook, GitHub does a test ping request to check if the request is successful. This should come back as a success if everything is configured correctly. 
+
 ### Development Instructions
+
 > [!IMPORTANT]
 > This repo will work with either `npm`, `pnpm` or `bun` for local development purposes, however the `Dockerfile` at build stage will be expecting a frozen `pnpm` lockfile, so ensure this has been updated with `pnpm install`
 
@@ -159,6 +175,7 @@ Access the application by navigating to [http://localhost:3000](http://localhost
 - Next.js
 - React
 - TypeScript
+- ShadCn
 - Prisma
 - Postgres
 - Docker
