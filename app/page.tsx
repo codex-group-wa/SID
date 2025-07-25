@@ -31,7 +31,26 @@ export default async function Home(props: {
           <Container className="mt-1" />
           SID Dashboard
         </h1>
-        <AutoRefresh />
+        <div className="flex gap-2 items-center">
+          <AutoRefresh />
+          {process.env.NEXT_PUBLIC_APP_VERSION ? (
+            <a
+              href="https://github.com/declan-wade/SID/releases"
+              className="text-gray-500 hidden sm:block"
+              target="_blank"
+            >
+              SID {process.env.NEXT_PUBLIC_APP_VERSION!}
+            </a>
+          ) : (
+            <a
+              href="https://github.com/declan-wade/SID/releases"
+              className="text-gray-500 hidden sm:block"
+              target="_blank"
+            >
+              GitHub
+            </a>
+          )}
+        </div>
       </div>
       <br />
       {containers && containers.length > 0 ? (

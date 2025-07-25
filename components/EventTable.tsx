@@ -120,8 +120,8 @@ const EventTable: React.FC<EventTableProps> = ({
   }, []);
 
   return (
-    <Card className="w-full" id="events">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full p-2" id="events">
+      <CardHeader className="flex flex-row items-center justify-between p-2">
         <div>
           <CardTitle className="text-xl font-bold">Events</CardTitle>
           <CardDescription>Recent system events and logs</CardDescription>
@@ -131,7 +131,7 @@ const EventTable: React.FC<EventTableProps> = ({
           Refresh
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2">
         <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
           <Input

@@ -122,8 +122,8 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full p-2">
+      <CardHeader className="flex flex-row items-center justify-between p-2">
         <div>
           <CardTitle className="text-xl font-bold">Docker Containers</CardTitle>
           <CardDescription>Manage your running containers</CardDescription>
@@ -152,7 +152,7 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <CardContent>
+      <CardContent className="p-2">
         <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
           <Input
