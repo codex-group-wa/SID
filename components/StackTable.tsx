@@ -18,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   Search,
-  Plus,
   FileBox,
   FolderTree,
   FolderSync,
@@ -33,12 +32,7 @@ import { formatDistanceToNow, formatISO } from "date-fns";
 import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
 import { clone, runDockerComposeForPath } from "@/lib/process";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const StackList = ({ stacks }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,6 +54,8 @@ const StackList = ({ stacks }: any) => {
 
   async function handleUp(stack: any) {
     toast.info(`Deploying stack. This may take several minutes...`);
+    await clone();
+    await syncStacks();
     setLoadingId(stack.id);
     try {
       await runDockerComposeForPath(
@@ -128,8 +124,8 @@ const StackList = ({ stacks }: any) => {
   );
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full p-2">
+      <CardHeader className="flex flex-row items-center justify-between p-2">
         <div>
           <CardTitle className="text-xl font-bold">Stacks & Schema</CardTitle>
           <CardDescription className="hidden sm:block">
@@ -141,7 +137,7 @@ const StackList = ({ stacks }: any) => {
           Sync from GitHub
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2">
         <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
           <Input

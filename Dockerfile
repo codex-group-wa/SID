@@ -69,8 +69,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # Install pnpm in the final stage for migrations
 RUN npm install -g pnpm prisma
 
-# Switch to non-root user
-#USER nextjs
+ARG NEXT_PUBLIC_APP_VERSION
+ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 
 # Expose port
 EXPOSE 3000
