@@ -9,7 +9,7 @@ SID is an opinionated, (almost) no-config service to provide a very simple way t
 This project has three key objectives:
 1. Provide a highly reliable way of deploying changes to `docker-compose` files from GitHub
 2. Provide clear visibility on the status of each attempted deployment - whether it failed or succeeded
-3. It must be as simple as possible while still achieving the desired outcome
+3. It must be as simple as possible while still achieving objective 1 and 2
 
 ### Why not Portainer or Komodo?
 These apps are excellent and far more powerful than SID - however they are significantly more complicated to setup. Generally they require configuring each stack individually along with the webhook. They also have differing ability to elegantly handle mono-repo setups.
@@ -182,6 +182,10 @@ Upon saving a new webhook, GitHub does a test ping request to check if the reque
 - Postgres
 - Docker
 - Tailwind CSS
+
+## Acknowledgements
+
+- Big thanks to the excellent [Homepage](https://github.com/gethomepage/homepage) project (and by extension [@shamoon](https://github.com/shamoon)) for inspiration on the `middleware` component allowing local host validation!  
 
 ## Contributing
 
