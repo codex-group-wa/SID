@@ -203,6 +203,68 @@ export async function killContainer(id: string) {
   });
 }
 
+export async function deleteContainer(id: string) {
+  console.info(`Deleting container with ID: ${id}`);
+  return new Promise((resolve, reject) => {
+    const ls = spawn("docker", ["container", "rm", "-v", id]);
+    let dataChunks: Buffer[] = [];
+    let errorChunks: Buffer[] = [];
+
+    ls.stdout.on("data", (data) => {
+      dataChunks.push(data);
+    });
+
+    ls.stderr.on("data", (data) => {
+      errorChunks.push(data);
+      console.error(`deleteContainer(${id}) stderr: ${data}`);
+      createEvent("Error", `Delete stderr: ${data}`);
+    });
+
+    ls.on("error", (error) => {
+      console.error(`deleteContainer(${id}) process error: ${error.message}`);
+      createEvent("Error", `Process error: ${error.message}`);
+      reject(new Error(`Process error: ${error.message}`));
+    });
+
+    ls.on("close", (code) => {
+      if (code !== 0) {
+        const errorMessage = Buffer.concat(errorChunks).toString().trim();
+        console.error(
+          `deleteContainer(${id}) process exited with code ${code}: ${errorMessage || "Unknown error"}`,
+        );
+        createEvent(
+          "Error",
+          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
+        );
+        reject(
+          new Error(
+            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
+          ),
+        );
+        return;
+      }
+
+      try {
+        const rawOutput = Buffer.concat(dataChunks).toString().trim();
+        console.info(`deleteContainer(${id}) success: ${rawOutput}`);
+        createEvent("Success", `Container ${id} deleted successfully`);
+        revalidatePath("/");
+        resolve({ status: "success", output: rawOutput });
+      } catch (err) {
+        console.error(
+          `deleteContainer(${id}) error processing output: ${(err as Error).message}`,
+        );
+        createEvent(
+          "Error",
+          `Error processing output: ${(err as Error).message}`,
+        );
+        revalidatePath("/");
+        reject(new Error(`Error processing output: ${(err as Error).message}`));
+      }
+    });
+  });
+}
+
 export async function restartContainer(id: string) {
   return new Promise((resolve, reject) => {
     const ls = spawn("docker", ["restart", id]);

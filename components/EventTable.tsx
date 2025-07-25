@@ -32,7 +32,7 @@ import {
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, formatISO } from "date-fns";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { refresh } from "@/lib/db";
@@ -111,12 +111,12 @@ const EventTable: React.FC<EventTableProps> = ({
 
   return (
     <Card className="w-full">
-       <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between">
         <div>
-        <CardTitle className="text-xl font-bold">Events</CardTitle>
-        <CardDescription>Recent system events and logs</CardDescription>
+          <CardTitle className="text-xl font-bold">Events</CardTitle>
+          <CardDescription>Recent system events and logs</CardDescription>
         </div>
-        <Button onClick={()=>refresh()}>
+        <Button onClick={() => refresh()}>
           <RefreshCw className="hidden sm:block h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -175,9 +175,16 @@ const EventTable: React.FC<EventTableProps> = ({
                           <span className="text-gray-400 italic">None</span>
                         )}
                       </TableCell>
-                      <TableCell className="md:table-cell text-gray-500 text-sm">
-                        {formatDate(event.createdAt)}
-                      </TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <TableCell className="md:table-cell text-gray-500 text-sm">
+                            {formatDate(event.createdAt)}
+                          </TableCell>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {formatISO(event.createdAt)}
+                        </TooltipContent>
+                      </Tooltip>
                     </TableRow>
                   ))}
                 </TableBody>

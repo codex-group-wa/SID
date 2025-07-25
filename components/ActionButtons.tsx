@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { RotateCw, X, Zap, Play } from "lucide-react";
+import { RotateCw, X, Zap, Play, Trash2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +24,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     { type: "Kill", icon: <Zap /> },
   ];
 
-  const stoppedActions = [{ type: "Start", icon: <Play /> }];
+  const stoppedActions = [
+    { type: "Start", icon: <Play /> },
+    { type: "Delete", icon: <Trash2 /> },
+  ];
 
   const actions =
     containerStatus === "running" ? runningActions : stoppedActions;

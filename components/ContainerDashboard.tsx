@@ -24,10 +24,25 @@ import {
 } from "@/components/ui/tooltip";
 import { Loader2, RefreshCw, Search } from "lucide-react";
 import ActionButtons from "./ActionButtons";
-import { restartContainer, stopContainer, killContainer } from "@/lib/process";
+import {
+  restartContainer,
+  stopContainer,
+  killContainer,
+  deleteContainer,
+} from "@/lib/process";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { refresh } from "@/lib/db";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Container {
   ID: string;
@@ -41,6 +56,8 @@ interface Container {
 
 const ContainerDashboard: React.FC<any> = ({ containers }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const filteredContainers = containers.filter(
@@ -81,10 +98,27 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
         } else if (response.status === "success") {
           toast.success(`Container ${id} started successfully!`);
         }
+      } else if (action === "Delete") {
+        setConfirmOpen(true);
+        setDeleteTarget(id);
       }
     } finally {
       setLoadingId(null);
     }
+  }
+
+  async function handleDelete() {
+    setLoadingId(deleteTarget);
+    setConfirmOpen(false);
+    console.log(deleteTarget);
+    const response: any = await deleteContainer(deleteTarget);
+    if (response.status === "error") {
+      toast.error(`Failed to delete container ${deleteTarget}`);
+    } else if (response.status === "success") {
+      toast.success(`Container ${deleteTarget} deleted successfully!`);
+    }
+    setLoadingId("");
+    setLoadingId(null);
   }
 
   return (
@@ -99,6 +133,25 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
           Refresh
         </Button>
       </CardHeader>
+      <AlertDialog open={confirmOpen} defaultOpen={false}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the container? This will also
+              delete non-persistent volumes
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDelete()}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <CardContent>
         <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
@@ -182,11 +235,13 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                             {container.Ports}
                           </TableCell>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="wrap-normal max-w-lg font-mono">
-                            {container.Ports}
-                          </p>
-                        </TooltipContent>
+                        {container.Ports && container.Ports.trim() !== "" && (
+                          <TooltipContent>
+                            <p className="wrap-normal max-w-lg font-mono">
+                              {container.Ports}
+                            </p>
+                          </TooltipContent>
+                        )}
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -194,12 +249,13 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                             {container.Mounts}
                           </TableCell>
                         </TooltipTrigger>
-
-                        <TooltipContent>
-                          <p className="wrap-normal max-w-lg">
-                            {container.Mounts}
-                          </p>
-                        </TooltipContent>
+                        {container.Mounts && container.Mounts.trim() !== "" && (
+                          <TooltipContent>
+                            <p className="wrap-normal max-w-lg">
+                              {container.Mounts}
+                            </p>
+                          </TooltipContent>
+                        )}
                       </Tooltip>
                       <TableCell className="lg:table-cell text-xs truncate max-w-xs">
                         {loadingId === container.ID ? (

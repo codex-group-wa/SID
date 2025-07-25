@@ -27,6 +27,7 @@ export default async function Home(props: {
     <div className="p-4">
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold p-2">SID Dashboard</h1>
+        <AutoRefresh />
       </div>
       <br />
       {containers && containers.length > 0 ? (
@@ -45,7 +46,6 @@ export default async function Home(props: {
         total={total}
         pageSize={pageSize}
       />
-      <AutoRefresh />
     </div>
   );
 }
