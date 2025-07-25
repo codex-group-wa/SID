@@ -1,6 +1,6 @@
 <img src=https://github.com/user-attachments/assets/81d5fd14-89d3-49c7-a01a-a99e54680bf8 width="100" height="100">
 
-# SID - Docker Deployment Manager
+# SID - Simple Integration & Deployment
 
 SID is an opinionated, (almost) no-config service to provide a very simple way to have reliable GitOps for Docker Compose and GitHub.
 
@@ -8,6 +8,10 @@ This project has three key objectives:
 1. Provide a highly reliable way of deploying changes to `docker-compose` files from GitHub
 2. Provide clear visibility on the status of each attempted deployment - whether it failed or succeeded
 3. It must be as simple as possible while still achieving the desired outcome
+
+### Why not Portainer or Komodo?
+These apps are excellent and far more powerful than SID - however they are significantly more complicated to setup. Generally they require configuring each stack individually along with the webhook. They also have differing ability to elegantly handle mono-repo setups.
+The interface of both these apps (particularly Komodo) can also be overwhelming for new users.
 
 ## Features
 
@@ -66,11 +70,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - SID_ALLOWED_HOSTS=localhost:3000 ## Required: the host and port where the app is accessible
-      - REPO_ROOT=https://<PAT>@github.com/<user>/<repo> ## Required: the URL of the repository root
+      - SID_ALLOWED_HOSTS=localhost:3000
+      - REPO_ROOT=https://<PAT>@github.com/<user>/<repo> 
       - REPO_NAME=compose-v2
-      - DB_URL=postgresql://admin:password@db:5432/sid ## Required: the database URL
-      - GITHUB_WEBHOOK_SECRET="abc" ## This is used to verify the GitHub webhook
+      - WORKING_DIR=/home/user/sid/data
+      - DB_URL=postgresql://admin:password@db:5432/sid
+      - GITHUB_WEBHOOK_SECRET="abc"
     volumes:
       - ./sid/app/data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -98,25 +103,16 @@ Further information is available below on each config option.
    docker build -t sid-app .
    ```
 
-**Running the container**
+## Configuration
 
-```bash
-docker run -d \
-  -p 3000:3000 \
-  -v ./sid-data:/app/data \
-  -e PUID=$(id -u) \
-  -e PGID=$(id -g) \
-  --name sid-container \
-  sid-app
-```
-
-- **`-d`**: Run the container in detached mode.
-- **`-p 3000:3000`**: Maps port 3000 on your host to port 3000 in the container. The default port is `3000` and can be changed via the `PORT` environment variable if necessary (e.g., `-e PORT=8080 -p 8080:8080`).
-- **`-v ./sid-data:/app/data`**: Mounts a directory from your host to `/app/data` in the container for data persistence (e.g., the SQLite database). `<b>./sid-data</b>` is an example relative path that creates a `<b>sid-data</b>` directory in your current working directory. For production or more robust setups, consider using an absolute path (e.g., `<b>/opt/sid-data</b>`) or a Docker named volume.
-- **`-e PUID=$(id -u)`**: Sets the user ID for the container process to your current user ID.
-- **`-e PGID=$(id -g)`**: Sets the group ID for the container process to your current group ID.
-- **`--name sid-container`**: Assigns a name to your container.
-- **`sid-app`**: The name of the image you built.
+| Name                  | Required?         | Description                                                                                                                                                                                                                                                    | Example                                                              |
+|-----------------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| SID_ALLOWED_HOSTS     | Yes               | This is the host and port SID is running on, that you want to externally access the Web UI on. This does not affect the webhook listener If you are only accessing the Web UI on localhost, this can be assigned `localhost:3000`                                | `10.1.1.10:3000`                                                       |
+| REPO_ROOT             | Yes               | The URL to your repo. NOTE: If your repo is private, you **must** provide a Personal Access Token (PAT) in this format: `https://<PAT>@github.com/<user>/<repo>`                                                                                                     | `https://github_pat_11AEXXXXX@github.com/john-smith/my-docker-compose` |
+| REPO_NAME             | Yes               | This is the name of your repository, without the organisation or username                                                                                                                                                                                      | my-docker-compose                                                    |
+| WORKING_DIR           | See description   | This is required if the mounts in your docker-compose files are using a relative path (e.g. `./portainer/data:/data`),  but this does not matter if your using a full path to your mounts (e.g. `/home/user/portainer/data:/data`).                            |                                                                      |
+| DB_URL                | Yes               | For connecting to the postgres container. The default is fine, however you can change it if you know what your doing                                                                                                                                           | `postgresql://admin:password@db:5432/sid`                              |
+| GITHUB_WEBHOOK_SECRET | If using webhooks | If your using a webhook to trigger deployments (recommended) then you must provide a secret that matches the secret provided when configuring a webhook in GitHub. GitHub does allow creation of webhooks without a secret however this will fail validation.  | `abczyx`                                                               |
 
 Access the application by navigating to [http://localhost:3000](http://localhost:3000) (or your configured port) in your web browser.
 
@@ -130,7 +126,7 @@ Access the application by navigating to [http://localhost:3000](http://localhost
     cd SID
     ```
 2.  **Install dependencies:**
-    This project uses [Bun](https://bun.sh/) as the package manager.
+   
     ```bash
     bun install
     ```
