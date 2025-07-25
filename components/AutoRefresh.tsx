@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 export function AutoRefresh({ interval = 10000 }: { interval?: number }) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(true);
+  const [checkedCookie, setCheckedCookie] = useState(false);
 
   // Load initial state from cookie
   useEffect(() => {
@@ -15,6 +16,7 @@ export function AutoRefresh({ interval = 10000 }: { interval?: number }) {
     if (cookie) {
       setEnabled(cookie.split("=")[1] === "true");
     }
+    setCheckedCookie(true);
   }, []);
 
   // Store state in cookie when changed
@@ -29,6 +31,8 @@ export function AutoRefresh({ interval = 10000 }: { interval?: number }) {
     }, interval);
     return () => clearInterval(intervalId);
   }, [router, interval, enabled]);
+
+  if (!checkedCookie) return null;
 
   return (
     <div className="flex items-center gap-2 p-2">

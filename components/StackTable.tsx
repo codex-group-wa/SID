@@ -29,7 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, formatISO } from "date-fns";
 import { syncStacks } from "@/lib/db";
 import { toast } from "sonner";
 import { clone, runDockerComposeForPath } from "@/lib/process";
@@ -62,7 +62,7 @@ const StackList = ({ stacks }: any) => {
     toast.info(`Deploying stack. This may take several minutes...`);
     setLoadingId(stack.id);
     try {
-      const response = await runDockerComposeForPath(
+      await runDockerComposeForPath(
         getShortPath(stack.path).split("/").slice(0, 3).join("/"),
       );
       toast.success("Stack deployed successfully!");
@@ -208,38 +208,59 @@ const StackList = ({ stacks }: any) => {
                           : stack.path}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-gray-500 text-sm">
-                      {formatDate(stack.createdAt)}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
-                      {formatDate(stack.updatedAt)}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
-                      {formatDate(stack.events[0]?.createdAt)}
-                    </TableCell>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TableCell className="hidden md:table-cell text-gray-500 text-sm">
+                          {formatDate(stack.createdAt)}
+                        </TableCell>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {formatISO(stack.createdAt)}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
+                          {formatDate(stack.updatedAt)}
+                        </TableCell>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {formatISO(stack.updatedAt)}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TableCell className="hidden lg:table-cell text-gray-500 text-sm">
+                          {formatDate(stack.events[0]?.createdAt)}
+                        </TableCell>
+                      </TooltipTrigger>
+                      {stack.events && stack.events[0]?.createdAt && (
+                        <TooltipContent>
+                          {formatISO(stack.events[0].createdAt)}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
                     <TableCell className="lg:table-cell text-sm">
                       {loadingId === stack.id ? (
                         <span className="flex items-center justify-left">
                           <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
                         </span>
                       ) : (
-                        <TooltipProvider key={stack.id}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                onClick={() => handleUp(stack)}
-                                className="w-7 h-7 px-1"
-                                variant="outline"
-                                size="icon"
-                              >
-                                <TrendingUp />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Bring Up</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => handleUp(stack)}
+                              className="w-7 h-7 px-1"
+                              variant="outline"
+                              size="icon"
+                            >
+                              <TrendingUp />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Bring Up</p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </TableCell>
                   </TableRow>
