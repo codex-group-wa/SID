@@ -4,6 +4,8 @@ import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";
 import EventTable from "@/components/EventTable";
 
+export const revalidate = 60;
+
 export default async function Home(props: {
   searchParams?: {
     query?: string;

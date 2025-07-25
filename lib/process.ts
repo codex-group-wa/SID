@@ -307,8 +307,20 @@ export async function clone() {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`clone() stderr: ${data}`);
-      createEvent("Error", `Clone stderr: ${data}`);
+      const stderrText = data.toString().trim();
+
+      // Check if this is actually an error or just git info
+      const isActualError =
+        stderrText.includes("fatal:") ||
+        stderrText.includes("error:") ||
+        stderrText.includes("permission denied");
+
+      if (isActualError) {
+        console.error(`clone() stderr: ${data}`);
+        createEvent("Error", `Clone stderr: ${data}`);
+      } else {
+        console.info(`clone() git info: ${data}`);
+      }
     });
 
     ls.on("error", (error) => {
