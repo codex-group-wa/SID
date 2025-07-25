@@ -4,6 +4,7 @@ import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";
 import EventTable from "@/components/EventTable";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { Container } from "lucide-react";
 
 export const revalidate = 60;
 
@@ -26,7 +27,10 @@ export default async function Home(props: {
   return (
     <div className="p-4">
       <div className="flex justify-between">
-        <h1 className="text-2xl font-bold p-2">SID Dashboard</h1>
+        <h1 className="text-2xl font-bold p-2 flex gap-2">
+          <Container className="mt-1" />
+          SID Dashboard
+        </h1>
         <AutoRefresh />
       </div>
       <br />

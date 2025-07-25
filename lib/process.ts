@@ -328,26 +328,34 @@ export async function restartContainer(id: string) {
 
 export async function clone() {
   return new Promise((resolve, reject) => {
+    const workingDir = process.env.WORKING_DIR!;
     const repoRoot = process.env.REPO_ROOT!;
 
-    if (!repoRoot) {
-      console.error("clone() missing REPO_ROOT environment variables.");
-      createEvent("Error", "Missing REPO_ROOT environment variables");
+    if (!workingDir || !repoRoot) {
+      console.error(
+        "clone() missing WORKING_DIR or REPO_ROOT environment variables.",
+      );
+      createEvent(
+        "Error",
+        "Missing WORKING_DIR or REPO_ROOT environment variables",
+      );
       reject(
-        new Error("Required environment variables REPO_ROOT are not defined"),
+        new Error(
+          "Required environment variables WORKING_DIR or REPO_ROOT are not defined",
+        ),
       );
       return;
     }
 
     const repoName = process.env.REPO_NAME;
-    const repoPath = `./${repoName}`;
+    const repoPath = `${workingDir}/${repoName}`;
 
     const checkDirCmd = `if [ -d "${repoPath}" ]; then
                               echo "exists";
                               cd "${repoPath}" && git fetch --all && git pull && echo "${repoPath}";
                             else
                               echo "new";
-                              git clone "${repoRoot}" && echo "${repoPath}";
+                              cd "${workingDir}" && git clone "${repoRoot}" && echo "${repoPath}";
                             fi`;
 
     const ls = spawn("sh", ["-c", checkDirCmd]);
@@ -448,8 +456,12 @@ export async function clone() {
 export async function runDockerComposeForChangedDirs(
   files: string[],
 ): Promise<{ dir: string; result: string; error?: string }[]> {
+  let workingDir = process.env.WORKING_DIR;
+  if (!workingDir) {
+    throw new Error("WORKING_DIR environment variable is not set");
+  }
   const repoName = process.env.REPO_ROOT?.split("/").pop()?.replace(".git", "");
-  const workingDir = `./${repoName}`;
+  workingDir = `${workingDir}/${repoName}`;
   // Get unique directories from file paths
   const dirs = Array.from(
     new Set(
@@ -530,11 +542,12 @@ export async function runDockerComposeForChangedDirs(
 }
 
 export async function findAllDockerComposeFiles(): Promise<string[]> {
+  let workingDir = process.env.WORKING_DIR;
   const repoName = process.env.REPO_ROOT?.split("/").pop()?.replace(".git", "");
-  if (!repoName) {
-    throw new Error("REPO_ROOT environment variable is not set");
+  if (!workingDir || !repoName) {
+    throw new Error("WORKING_DIR or REPO_ROOT environment variable is not set");
   }
-  const rootDir = join(".", repoName);
+  const rootDir = join(workingDir, repoName);
 
   const results: string[] = [];
 
@@ -577,9 +590,14 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
 export async function runDockerComposeForPath(
   path: string,
 ): Promise<{ dir: string; result: string; error?: string }> {
+  let workingDir = process.env.WORKING_DIR;
+  if (!workingDir) {
+    throw new Error("WORKING_DIR environment variable is not set");
+  }
+
   // Remove leading/trailing slashes and construct absolute directory path
   const cleanPath = path.replace(/^\/|\/$/g, "");
-  const absDir = `./${cleanPath}`;
+  const absDir = `${workingDir}/${cleanPath}`;
   console.log("stack name: ", cleanPath.split("/")[1]);
   console.info(`Running docker compose in: ${absDir}`);
 
