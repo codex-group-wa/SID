@@ -8,7 +8,6 @@ services:
       - REPO_ROOT=https://<PAT>@github.com/<user>/<repo> ## Required: the URL of the repository root
       - REPO_NAME=compose-v2
       - DB_URL=postgresql://admin:password@db:5432/sid ## Required: the database URL
-      - WORKING_DIR=/app/data ## Do not change this unless you know what you are doing
       - GITHUB_WEBHOOK_SECRET="abc" ## This is used to verify the GitHub webhook
     volumes:
       - ./sid/app/data:/app/data

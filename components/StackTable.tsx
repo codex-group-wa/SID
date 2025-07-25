@@ -258,7 +258,9 @@ const StackList = ({ stacks }: any) => {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Bring Up</p>
+                            <p>
+                              Manually <br></br>Bring Up
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       )}

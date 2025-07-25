@@ -96,11 +96,13 @@ const EventTable: React.FC<EventTableProps> = ({
   };
 
   const handlePrev = () => {
-    const url = createPageURL(Math.max(1, page - 1));
+    let url = createPageURL(Math.max(1, page - 1));
+    url = url + "#events";
     router.push(url);
   };
   const handleNext = () => {
-    const url = createPageURL(Math.min(totalPages, page + 1));
+    let url = createPageURL(Math.min(totalPages, page + 1));
+    url = url + "#events";
     router.push(url);
   };
 
@@ -109,8 +111,16 @@ const EventTable: React.FC<EventTableProps> = ({
     createPageURL(1);
   }, [searchTerm]);
 
+  React.useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+      const element = document.getElementById(hash);
+      element?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
+
   return (
-    <Card className="w-full">
+    <Card className="w-full" id="events">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-xl font-bold">Events</CardTitle>
