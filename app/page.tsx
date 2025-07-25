@@ -3,18 +3,20 @@ import ContainerDashboard from "@/components/ContainerDashboard";
 import { getEvents, getStacks } from "@/lib/db";
 import StackList from "@/components/StackTable";
 import EventTable from "@/components/EventTable";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const revalidate = 60;
 
 export default async function Home(props: {
-  searchParams?: {
+  searchParams?: Promise<{
     query?: string;
     page?: string;
-  };
+  }>;
 }) {
   const { searchParams } = props;
   const pageSize = 10;
-  const currentPage = Number(searchParams?.page) || 1;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const currentPage = Number(resolvedSearchParams.page) || 1;
   let containers = [];
   const response: any = await check();
   containers = response.containers;
@@ -43,6 +45,7 @@ export default async function Home(props: {
         total={total}
         pageSize={pageSize}
       />
+      <AutoRefresh />
     </div>
   );
 }

@@ -22,10 +22,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, RefreshCw, Search } from "lucide-react";
 import ActionButtons from "./ActionButtons";
 import { restartContainer, stopContainer, killContainer } from "@/lib/process";
 import { toast } from "sonner";
+import { Button } from "./ui/button";
+import { refresh } from "@/lib/db";
 
 interface Container {
   ID: string;
@@ -87,10 +89,18 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold">Docker Containers</CardTitle>
-        <CardDescription>Manage your running containers</CardDescription>
-        <div className="relative mt-2">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-xl font-bold">Docker Containers</CardTitle>
+          <CardDescription>Manage your running containers</CardDescription>
+        </div>
+        <Button onClick={() => refresh()}>
+          <RefreshCw className="hidden sm:block h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search containers..."
@@ -99,8 +109,6 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </CardHeader>
-      <CardContent>
         <div className="rounded-md border">
           {!containers || containers.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -160,9 +168,14 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                       <TableCell className="font-mono text-xs">
                         {container.ID.substring(0, 10)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {container.CreatedAt.split(" ")[0]}
-                      </TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <TableCell className="hidden md:table-cell">
+                            {container.CreatedAt.split(" ")[0]}
+                          </TableCell>
+                        </TooltipTrigger>
+                        <TooltipContent>{container.CreatedAt}</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <TableCell className="hidden md:table-cell font-mono truncate max-w-lg text-xs">
@@ -177,7 +190,7 @@ const ContainerDashboard: React.FC<any> = ({ containers }) => {
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <TableCell className="hidden lg:table-cell text-xs max-w-xs">
+                          <TableCell className="hidden lg:table-cell text-xs truncate max-w-xs">
                             {container.Mounts}
                           </TableCell>
                         </TooltipTrigger>

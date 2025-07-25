@@ -144,3 +144,7 @@ export async function getEvents(page: number, pageSize: number) {
     throw err;
   }
 }
+
+export async function refresh(){
+  revalidatePath("/");
+}

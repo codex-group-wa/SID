@@ -30,10 +30,12 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { refresh } from "@/lib/db";
 
 const typeIcon = (type: string) => {
   switch (type.toLowerCase()) {
@@ -109,10 +111,18 @@ const EventTable: React.FC<EventTableProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
+       <CardHeader className="flex flex-row items-center justify-between">
+        <div>
         <CardTitle className="text-xl font-bold">Events</CardTitle>
         <CardDescription>Recent system events and logs</CardDescription>
-        <div className="relative mt-2">
+        </div>
+        <Button onClick={()=>refresh()}>
+          <RefreshCw className="hidden sm:block h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="relative mb-4">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search events..."
@@ -121,8 +131,6 @@ const EventTable: React.FC<EventTableProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </CardHeader>
-      <CardContent>
         <div className="rounded-md border">
           {displayEvents.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
