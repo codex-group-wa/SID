@@ -342,6 +342,17 @@ export async function clone() {
     const repoName = process.env.REPO_NAME;
     const repoPath = `${workingDir}/${repoName}`;
 
+    // Detect SSH or HTTPS/PAT repo URL
+    const isSSH = repoRoot.startsWith("git@");
+    const isPAT = repoRoot.startsWith("https://");
+
+    // If using SSH, set GIT_SSH_COMMAND to avoid host key prompt (optional)
+    // You may want to customize this for your environment
+    const env = { ...process.env };
+    if (isSSH) {
+      env.GIT_SSH_COMMAND = "ssh -o StrictHostKeyChecking=accept-new";
+    }
+
     const checkDirCmd = `if [ -d "${repoPath}" ]; then
                               echo "exists";
                               cd "${repoPath}" && git fetch --all && git pull && echo "${repoPath}";
@@ -350,7 +361,7 @@ export async function clone() {
                               cd "${workingDir}" && git clone "${repoRoot}" && echo "${repoPath}";
                             fi`;
 
-    const ls = spawn("sh", ["-c", checkDirCmd]);
+    const ls = spawn("sh", ["-c", checkDirCmd], { env });
     let dataChunks: Buffer[] = [];
     let errorChunks: Buffer[] = [];
 
