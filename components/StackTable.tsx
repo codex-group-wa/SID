@@ -95,7 +95,7 @@ const StackList = ({ stacks }: any) => {
   const getShortPath = (fullPath: string) => {
     // Try to find the "/compose-v2" or repo folder in the path and return from there
     const repoRoot =
-      process.env.REPO_ROOT?.split("/").pop()?.replace(".git", "") ||
+      process.env.REPO_URL?.split("/").pop()?.replace(".git", "") ||
       "compose-v2";
     const idx = fullPath.indexOf(`/${repoRoot}/`);
     if (idx !== -1) {
