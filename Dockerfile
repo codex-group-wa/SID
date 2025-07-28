@@ -57,7 +57,7 @@ COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
-#RUN chown nextjs:nodejs .next
+RUN mkdir /app/data
 
 # Copy the build output (this includes node_modules and server.js)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

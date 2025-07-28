@@ -6,6 +6,54 @@ import { join } from "path";
 import { createEvent } from "./db";
 import { revalidatePath } from "next/cache";
 
+// Helper function for consistent error handling
+function handleProcessError(
+  functionName: string,
+  id: string | null,
+  error: Error,
+  reject: (reason?: any) => void,
+) {
+  const message = `${functionName}${id ? `(${id})` : ""} process error: ${error.message}`;
+  console.error(message);
+  createEvent("Error", `Process error: ${error.message}`);
+  reject(new Error(`Process error: ${error.message}`));
+}
+
+function handleProcessClose(
+  functionName: string,
+  id: string | null,
+  code: number,
+  errorChunks: Buffer[],
+  reject: (reason?: any) => void,
+): boolean {
+  if (code !== 0) {
+    const errorMessage = Buffer.concat(errorChunks).toString().trim();
+    const message = `${functionName}${id ? `(${id})` : ""} process exited with code ${code}: ${errorMessage || "Unknown error"}`;
+    console.error(message);
+    createEvent(
+      "Error",
+      `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
+    );
+    reject(
+      new Error(
+        `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
+      ),
+    );
+    return false;
+  }
+  return true;
+}
+
+function handleStderr(
+  functionName: string,
+  id: string | null,
+  data: Buffer,
+  operation: string,
+) {
+  console.error(`${functionName}${id ? `(${id})` : ""} stderr: ${data}`);
+  createEvent("Error", `${operation} stderr: ${data}`);
+}
+
 export async function check() {
   return new Promise((resolve, reject) => {
     const ls = spawn("docker", [
@@ -23,31 +71,15 @@ export async function check() {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`check() stderr: ${data}`);
-      createEvent("Error", `Check stderr: ${data}`);
+      handleStderr("check", null, data, "Check");
     });
 
     ls.on("error", (error) => {
-      console.error(`check() process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("check", null, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `check() process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (!handleProcessClose("check", null, code ?? 1, errorChunks, reject)) {
         return;
       }
 
@@ -92,31 +124,17 @@ export async function stopContainer(id: string) {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`stopContainer(${id}) stderr: ${data}`);
-      createEvent("Error", `Stop stderr: ${data}`);
+      handleStderr("stopContainer", id, data, "Stop");
     });
 
     ls.on("error", (error) => {
-      console.error(`stopContainer(${id}) process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("stopContainer", id, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `stopContainer(${id}) process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (
+        !handleProcessClose("stopContainer", id, code ?? 1, errorChunks, reject)
+      ) {
         return;
       }
 
@@ -154,38 +172,24 @@ export async function killContainer(id: string) {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`killContainer(${id}) stderr: ${data}`);
-      createEvent("Error", `Kill stderr: ${data}`);
+      handleStderr("killContainer", id, data, "Kill");
     });
 
     ls.on("error", (error) => {
-      console.error(`killContainer(${id}) process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("killContainer", id, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `killContainer(${id}) process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (
+        !handleProcessClose("killContainer", id, code ?? 1, errorChunks, reject)
+      ) {
         return;
       }
 
       try {
         const rawOutput = Buffer.concat(dataChunks).toString().trim();
         console.info(`killContainer(${id}) success: ${rawOutput}`);
-        createEvent("Success", `Container ${id} stopped successfully`);
+        createEvent("Success", `Container ${id} killed successfully`);
         revalidatePath("/");
         resolve({ status: "success", output: rawOutput });
       } catch (err) {
@@ -216,31 +220,23 @@ export async function deleteContainer(id: string) {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`deleteContainer(${id}) stderr: ${data}`);
-      createEvent("Error", `Delete stderr: ${data}`);
+      handleStderr("deleteContainer", id, data, "Delete");
     });
 
     ls.on("error", (error) => {
-      console.error(`deleteContainer(${id}) process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("deleteContainer", id, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `deleteContainer(${id}) process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (
+        !handleProcessClose(
+          "deleteContainer",
+          id,
+          code ?? 1,
+          errorChunks,
+          reject,
+        )
+      ) {
         return;
       }
 
@@ -266,6 +262,7 @@ export async function deleteContainer(id: string) {
 }
 
 export async function restartContainer(id: string) {
+  console.info(`Restarting container with ID: ${id}`);
   return new Promise((resolve, reject) => {
     const ls = spawn("docker", ["restart", id]);
     let dataChunks: Buffer[] = [];
@@ -277,31 +274,23 @@ export async function restartContainer(id: string) {
 
     ls.stderr.on("data", (data) => {
       errorChunks.push(data);
-      console.error(`restartContainer(${id}) stderr: ${data}`);
-      createEvent("Error", `Restart stderr: ${data}`);
+      handleStderr("restartContainer", id, data, "Restart");
     });
 
     ls.on("error", (error) => {
-      console.error(`restartContainer(${id}) process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("restartContainer", id, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `restartContainer(${id}) process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process exited with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (
+        !handleProcessClose(
+          "restartContainer",
+          id,
+          code ?? 1,
+          errorChunks,
+          reject,
+        )
+      ) {
         return;
       }
 
@@ -328,23 +317,26 @@ export async function restartContainer(id: string) {
 
 export async function clone() {
   return new Promise((resolve, reject) => {
-    const workingDir = process.env.WORKING_DIR!;
-    const repoRoot = process.env.REPO_ROOT!;
+    const workingDir = process.env.WORKING_DIR || "/app/data";
+    const repoRoot = process.env.REPO_URL;
 
-    if (!workingDir || !repoRoot) {
-      console.error(
-        "clone() missing WORKING_DIR or REPO_ROOT environment variables.",
+    if (!repoRoot) {
+      const errorMessage =
+        "Required environment variable REPO_URL is not defined";
+      console.error(`clone() ${errorMessage}`);
+      createEvent("Error", "Missing REPO_URL environment variable");
+      reject(new Error(errorMessage));
+      return;
+    }
+
+    if (!process.env.WORKING_DIR) {
+      console.warn(
+        "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
       );
       createEvent(
-        "Error",
-        "Missing WORKING_DIR or REPO_ROOT environment variables",
+        "Info",
+        "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
       );
-      reject(
-        new Error(
-          "Required environment variables WORKING_DIR or REPO_ROOT are not defined",
-        ),
-      );
-      return;
     }
 
     const repoName = process.env.REPO_NAME;
@@ -359,7 +351,6 @@ export async function clone() {
                             fi`;
 
     const ls = spawn("sh", ["-c", checkDirCmd]);
-
     let dataChunks: Buffer[] = [];
     let errorChunks: Buffer[] = [];
 
@@ -386,26 +377,11 @@ export async function clone() {
     });
 
     ls.on("error", (error) => {
-      console.error(`clone() process error: ${error.message}`);
-      createEvent("Error", `Process error: ${error.message}`);
-      reject(new Error(`Process error: ${error.message}`));
+      handleProcessError("clone", null, error, reject);
     });
 
     ls.on("close", (code) => {
-      if (code !== 0) {
-        const errorMessage = Buffer.concat(errorChunks).toString().trim();
-        console.error(
-          `clone() process failed with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        createEvent(
-          "Error",
-          `Process failed with code ${code}: ${errorMessage || "Unknown error"}`,
-        );
-        reject(
-          new Error(
-            `Process failed with code ${code}: ${errorMessage || "Unknown error"}`,
-          ),
-        );
+      if (!handleProcessClose("clone", null, code ?? 1, errorChunks, reject)) {
         return;
       }
 
@@ -456,12 +432,21 @@ export async function clone() {
 export async function runDockerComposeForChangedDirs(
   files: string[],
 ): Promise<{ dir: string; result: string; error?: string }[]> {
-  let workingDir = process.env.WORKING_DIR;
+  let workingDir = process.env.WORKING_DIR || "/app/data";
+
   if (!workingDir) {
-    throw new Error("WORKING_DIR environment variable is not set");
+    console.warn(
+      "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
+    );
   }
-  const repoName = process.env.REPO_ROOT?.split("/").pop()?.replace(".git", "");
+
+  if (!process.env.REPO_URL) {
+    throw new Error("Required environment variable REPO_URL is not set");
+  }
+
+  const repoName = process.env.REPO_URL?.split("/").pop()?.replace(".git", "");
   workingDir = `${workingDir}/${repoName}`;
+
   // Get unique directories from file paths
   const dirs = Array.from(
     new Set(
@@ -474,6 +459,7 @@ export async function runDockerComposeForChangedDirs(
   for (const dir of dirs) {
     const absDir = `${workingDir}/${dir}`;
     console.info(`Running docker compose in: ${absDir}`);
+
     try {
       const result = await new Promise<string>((resolve, reject) => {
         const proc = spawn(
@@ -482,14 +468,23 @@ export async function runDockerComposeForChangedDirs(
           { cwd: absDir },
         );
         let output = "";
-        let error = "";
+        let errorOutput = "";
 
         proc.stdout.on("data", (data) => {
           output += data.toString();
         });
+
         proc.stderr.on("data", (data) => {
-          error += data.toString();
+          errorOutput += data.toString();
         });
+
+        proc.on("error", (error) => {
+          const message = `Failed to start docker compose in ${absDir}: ${error.message}`;
+          console.error(message);
+          createEvent("Error", message, dir.split("/")[0]);
+          reject(error);
+        });
+
         proc.on("close", (code) => {
           if (code === 0) {
             console.info(
@@ -502,29 +497,21 @@ export async function runDockerComposeForChangedDirs(
             );
             resolve(output.trim());
           } else {
+            const errorMessage =
+              errorOutput.trim() || `Exited with code ${code}`;
             console.error(
-              `docker compose up failed in ${absDir}: ${error.trim()}`,
+              `docker compose up failed in ${absDir}: ${errorMessage}`,
             );
             createEvent(
               "Error",
-              `docker compose up failed in ${absDir}: ${error.trim()}`,
+              `docker compose up failed in ${absDir}: ${errorMessage}`,
               dir.split("/")[0],
             );
-            reject(new Error(error.trim() || `Exited with code ${code}`));
+            reject(new Error(errorMessage));
           }
         });
-        proc.on("error", (err) => {
-          console.error(
-            `Failed to start docker compose in ${absDir}: ${err.message}`,
-          );
-          createEvent(
-            "Error",
-            `Failed to start docker compose in ${absDir}: ${err.message}`,
-            dir.split("/")[0],
-          );
-          reject(err);
-        });
       });
+
       results.push({ dir: absDir, result });
     } catch (err: any) {
       console.error(
@@ -538,17 +525,30 @@ export async function runDockerComposeForChangedDirs(
       results.push({ dir: absDir, result: "", error: err.message });
     }
   }
+
   return results;
 }
 
 export async function findAllDockerComposeFiles(): Promise<string[]> {
-  let workingDir = process.env.WORKING_DIR;
-  const repoName = process.env.REPO_ROOT?.split("/").pop()?.replace(".git", "");
-  if (!workingDir || !repoName) {
-    throw new Error("WORKING_DIR or REPO_ROOT environment variable is not set");
-  }
-  const rootDir = join(workingDir, repoName);
+  const workingDir = process.env.WORKING_DIR || "/app/data";
+  const repoRoot = process.env.REPO_URL;
 
+  if (!repoRoot) {
+    throw new Error("Required environment variable REPO_URL is not set");
+  }
+
+  const repoName = repoRoot.split("/").pop()?.replace(".git", "");
+  if (!repoName) {
+    throw new Error("Unable to determine repository name from REPO_URL");
+  }
+
+  if (!process.env.WORKING_DIR) {
+    console.warn(
+      "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
+    );
+  }
+
+  const rootDir = join(workingDir, repoName);
   const results: string[] = [];
 
   function walk(dir: string) {
@@ -561,9 +561,11 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
       );
       return;
     }
+
     for (const entry of entries) {
       const fullPath = join(dir, entry);
       let stats;
+
       try {
         stats = statSync(fullPath);
       } catch (err) {
@@ -572,6 +574,7 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
         );
         continue;
       }
+
       if (stats.isDirectory()) {
         walk(fullPath);
       } else if (
@@ -590,7 +593,8 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
 export async function runDockerComposeForPath(
   path: string,
 ): Promise<{ dir: string; result: string; error?: string }> {
-  let workingDir = process.env.WORKING_DIR;
+  const workingDir = process.env.WORKING_DIR;
+
   if (!workingDir) {
     throw new Error("WORKING_DIR environment variable is not set");
   }
@@ -609,14 +613,24 @@ export async function runDockerComposeForPath(
         { cwd: absDir },
       );
       let output = "";
-      let error = "";
+      let errorOutput = "";
 
       proc.stdout.on("data", (data) => {
         output += data.toString();
       });
+
       proc.stderr.on("data", (data) => {
-        error += data.toString();
+        errorOutput += data.toString();
       });
+
+      proc.on("error", (error) => {
+        const message = `Failed to start docker compose in ${absDir}: ${error.message}`;
+        console.error(message);
+        createEvent("Error", message, cleanPath.split("/")[1]);
+        revalidatePath("/");
+        reject(error);
+      });
+
       proc.on("close", (code) => {
         if (code === 0) {
           console.info(
@@ -630,31 +644,21 @@ export async function runDockerComposeForPath(
           revalidatePath("/");
           resolve(output.trim());
         } else {
+          const errorMessage = errorOutput.trim() || `Exited with code ${code}`;
           console.error(
-            `docker compose up failed in ${absDir}: ${error.trim()}`,
+            `docker compose up failed in ${absDir}: ${errorMessage}`,
           );
           createEvent(
             "Error",
-            `docker compose up failed in ${absDir}: ${error.trim()}`,
+            `docker compose up failed in ${absDir}: ${errorMessage}`,
             cleanPath.split("/")[1],
           );
           revalidatePath("/");
-          reject(new Error(error.trim() || `Exited with code ${code}`));
+          reject(new Error(errorMessage));
         }
       });
-      proc.on("error", (err) => {
-        console.error(
-          `Failed to start docker compose in ${absDir}: ${err.message}`,
-        );
-        createEvent(
-          "Error",
-          `Failed to start docker compose in ${absDir}: ${err.message}`,
-          cleanPath.split("/")[1],
-        );
-        revalidatePath("/");
-        reject(err);
-      });
     });
+
     return { dir: absDir, result };
   } catch (err: any) {
     console.error(`Error running docker compose in ${absDir}: ${err.message}`);
