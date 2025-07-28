@@ -133,7 +133,45 @@ Step 7 - specifies this is optional, however SID is expecting a secret to valida
 
 Upon saving a new webhook, GitHub does a test ping request to check if the request is successful. This should come back as a success if everything is configured correctly. 
 
-### Development Instructions
+## How it works
+
+The following diagram explains how the webhook trigger works, which is ready to run as soon as SID is brought up, no additional configuration is required. 
+
+The "Sync GitHub" button in the UI is just for manually cloning/pulling the repo and syncing the actual structure of the compose directory with the database (this is possibly redundant, could maybe make this automatic when loading the UI)  
+
+```mermaid
+flowchart TD
+    A[Webhook Trigger] --> B{Repository exists locally?}
+    
+    B -->|No| C[git clone repository]
+    B -->|Yes| D[git pull latest changes]
+    
+    C --> E[Parse event payload for changed files]
+    D --> E
+    
+    E --> F{Changed files contain docker-compose files?}
+    
+    F -->|No| G[End - No compose files to update]
+    F -->|Yes| H[Extract directories with docker-compose changes]
+    
+    H --> I[For each affected directory]
+    I --> J[Navigate to directory]
+    J --> K[Execute: docker compose up -d --remove-orphans]
+    
+    K --> L{More directories?}
+    L -->|Yes| I
+    L -->|No| M[End - All compose files updated]
+    
+    K --> N{Command successful?}
+    N -->|Yes| O[Log success event]
+    N -->|No| P[Log error event]
+    
+    O --> L
+    P --> L
+    
+```
+
+## Development Instructions
 
 > [!IMPORTANT]
 > This repo will work with either `npm`, `pnpm` or `bun` for local development purposes, however the `Dockerfile` at build stage will be expecting a frozen `pnpm` lockfile, so ensure this has been updated with `pnpm install`
