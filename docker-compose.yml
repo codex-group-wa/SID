@@ -6,7 +6,8 @@ services:
     environment:
       - SID_ALLOWED_HOSTS=localhost:3000 ## Required: the host and port where the app is accessible
       - REPO_URL=https://<PAT>@github.com/<user>/<repo> ## Required: the URL of the repository root
-      - REPO_NAME=compose-v2
+      - REPO_NAME=compose-v2 ## Required: the name of the repository
+      - WORKING_DIR=/home/user/sid/data ## Required if your containers use relative volume bindings
       - DB_URL=postgresql://admin:password@db:5432/sid ## Required: the database URL
       - GITHUB_WEBHOOK_SECRET="abc" ## This is used to verify the GitHub webhook
     volumes:
