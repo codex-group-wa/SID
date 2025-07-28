@@ -1,5 +1,6 @@
 "use server";
 
+import { syncStacks } from "@/lib/db";
 import { clone, runDockerComposeForChangedDirs } from "@/lib/process";
 import { verify } from "@octokit/webhooks-methods";
 
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
 
     // Clone the repository
     await clone();
+
+    // Sync stacks with Database before any events are written to DB
+    await syncStacks();
 
     // Process commits
     const changedFiles: string[] = [];
