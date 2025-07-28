@@ -45,7 +45,7 @@ my-compose-files/ <<--- this is the repo name
 - If your repo is **private**, a PAT token is required as an environment variable - this is explained further below in the docker config.
 
 > [!WARNING]
-> Be **very careful** with your docker-compose files if your repo is public, as often there are sensitive environment variables such as secret keys.
+> Be **very careful** with your `docker-compose` files if your repo is public, as often there are sensitive environment variables such as secret keys in plain text! Be mindful of your setup!
 
 ### Running with Docker (for end-users)
 
@@ -73,7 +73,7 @@ services:
       - "3000:3000"
     environment:
       - SID_ALLOWED_HOSTS=localhost:3000
-      - REPO_ROOT=https://<PAT>@github.com/<user>/<repo> 
+      - REPO_URL=https://<PAT>@github.com/<user>/<repo> 
       - REPO_NAME=compose-v2
       - WORKING_DIR=/home/user/sid/data
       - DB_URL=postgresql://admin:password@db:5432/sid
@@ -109,10 +109,10 @@ Further information is available below on each config option.
 
 | Name                  | Required?         | Description                                                                                                                                                                                                                                                    | Example                                                              |
 |-----------------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| SID_ALLOWED_HOSTS     | Yes               | This is the host and port SID is running on, that you want to externally access the Web UI on. This does not affect the webhook listener If you are only accessing the Web UI on localhost, this can be assigned `localhost:3000`                                | `10.1.1.10:3000`                                                       |
-| REPO_ROOT             | Yes               | The URL to your repo. NOTE: If your repo is private, you **must** provide a Personal Access Token (PAT) in this format: `https://<PAT>@github.com/<user>/<repo>`                                                                                                     | `https://github_pat_11AEXXXXX@github.com/john-smith/my-docker-compose` |
+| SID_ALLOWED_HOSTS     | No, for localhost only. Yes for non-localhost access to Web UI               | This is the host and port SID is running on, that you want to externally access the Web UI on. This does not affect the webhook listener If you are only accessing the Web UI on localhost, this can be assigned `localhost:3000`                                | `10.1.1.10:3000`                                                       |
+| REPO_URL             | Yes               | The URL to your repo. NOTE: If your repo is private, you **must** provide a Personal Access Token (PAT) in this format: `https://<PAT>@github.com/<user>/<repo>`                                                                                                     | `https://github_pat_11AEXXXXX@github.com/john-smith/my-docker-compose` |
 | REPO_NAME             | Yes               | This is the name of your repository, without the organisation or username                                                                                                                                                                                      | my-docker-compose                                                    |
-| WORKING_DIR           | See description   | This is required if the mounts in your docker-compose files are using a relative path (e.g. `./portainer/data:/data`),  but this does not matter if your using a full path to your mounts (e.g. `/home/user/portainer/data:/data`).                            |                                                                      |
+| WORKING_DIR           | See description   | This is required **if** the mounts in your `docker-compose` files are using a relative path (e.g. your portainer instance has a volume bind mount like this `./portainer/data:/data`),  but this does not matter if your using a _full path_ to your mounts (e.g. `/home/user/portainer/data:/data`). **Furthermore**, the path you provide here **must** be accessible to the host or else the docker service won't be able to bring up the containers.                            |  Using the following environment variable: ` WORKING_DIR=/home/user/sid/data` with the following volume binding: `./data:/home/user/sid/data`               |
 | DB_URL                | Yes               | For connecting to the postgres container. The default is fine, however you can change it if you know what your doing                                                                                                                                           | `postgresql://admin:password@db:5432/sid`                              |
 | GITHUB_WEBHOOK_SECRET | If using webhooks | If your using a webhook to trigger deployments (recommended) then you must provide a secret that matches the secret provided when configuring a webhook in GitHub. GitHub does allow creation of webhooks without a secret however this will fail validation.  | `abczyx`                                                               |
 
