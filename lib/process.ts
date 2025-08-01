@@ -105,6 +105,15 @@ export async function check() {
       } catch (err) {
         console.error(`check() error parsing JSON: ${(err as Error).message}`);
         createEvent("Error", `Error parsing JSON: ${(err as Error).message}`);
+        if (process.env.NTFY_URL) {
+          fetch(`${process.env.NTFY_URL}`, {
+            method: "POST", // PUT works too
+            body: "Error parsing JSON: ${(err as Error).message}",
+            headers: {
+              title: "SID 🐳 - Error",
+            },
+          });
+        }
         reject(new Error(`Error parsing JSON: ${(err as Error).message}`));
       }
     });
@@ -342,6 +351,17 @@ export async function clone() {
     const repoName = process.env.REPO_NAME;
     const repoPath = `${workingDir}/${repoName}`;
 
+    // Detect SSH or HTTPS/PAT repo URL
+    const isSSH = repoRoot.startsWith("git@");
+    const isPAT = repoRoot.startsWith("https://");
+
+    // If using SSH, set GIT_SSH_COMMAND to avoid host key prompt (optional)
+    // You may want to customize this for your environment
+    const env = { ...process.env };
+    if (isSSH) {
+      env.GIT_SSH_COMMAND = "ssh -o StrictHostKeyChecking=accept-new";
+    }
+
     const checkDirCmd = `if [ -d "${repoPath}" ]; then
                               echo "exists";
                               cd "${repoPath}" && git fetch --all && git pull && echo "${repoPath}";
@@ -350,7 +370,7 @@ export async function clone() {
                               cd "${workingDir}" && git clone "${repoRoot}" && echo "${repoPath}";
                             fi`;
 
-    const ls = spawn("sh", ["-c", checkDirCmd]);
+    const ls = spawn("sh", ["-c", checkDirCmd], { env });
     let dataChunks: Buffer[] = [];
     let errorChunks: Buffer[] = [];
 
@@ -371,6 +391,15 @@ export async function clone() {
       if (isActualError) {
         console.error(`clone() stderr: ${data}`);
         createEvent("Error", `Clone stderr: ${data}`);
+        if (process.env.NTFY_URL) {
+          fetch(`${process.env.NTFY_URL}`, {
+            method: "POST", // PUT works too
+            body: `Clone stderr: ${data}`,
+            headers: {
+              title: "SID 🐳 - Error Cloning",
+            },
+          });
+        }
       } else {
         console.info(`clone() git info: ${data}`);
       }
@@ -407,6 +436,15 @@ export async function clone() {
         } else {
           console.info(`clone() repository newly cloned to ${resultPath}.`);
           createEvent("Info", `Repository newly cloned to ${resultPath}`);
+          if (process.env.NTFY_URL) {
+            fetch(`${process.env.NTFY_URL}`, {
+              method: "POST", // PUT works too
+              body: `Repository newly cloned to ${resultPath}`,
+              headers: {
+                title: "SID 🐳 - Success",
+              },
+            });
+          }
           revalidatePath("/");
           resolve({
             status: "success",
@@ -482,6 +520,15 @@ export async function runDockerComposeForChangedDirs(
           const message = `Failed to start docker compose in ${absDir}: ${error.message}`;
           console.error(message);
           createEvent("Error", message, dir.split("/")[0]);
+          if (process.env.NTFY_URL) {
+            fetch(`${process.env.NTFY_URL}`, {
+              method: "POST", // PUT works too
+              body: `Error: {message}`,
+              headers: {
+                title: "SID 🐳 - Failed to start docker compose",
+              },
+            });
+          }
           reject(error);
         });
 
@@ -495,6 +542,15 @@ export async function runDockerComposeForChangedDirs(
               `docker compose up succeeded in ${absDir}`,
               dir.split("/")[0],
             );
+            if (process.env.NTFY_URL) {
+              fetch(`${process.env.NTFY_URL}`, {
+                method: "POST", // PUT works too
+                body: `docker compose up succeeded in ${absDir}`,
+                headers: {
+                  title: "SID 🐳 - Success",
+                },
+              });
+            }
             resolve(output.trim());
           } else {
             const errorMessage =
@@ -507,6 +563,15 @@ export async function runDockerComposeForChangedDirs(
               `docker compose up failed in ${absDir}: ${errorMessage}`,
               dir.split("/")[0],
             );
+            if (process.env.NTFY_URL) {
+              fetch(`${process.env.NTFY_URL}`, {
+                method: "POST", // PUT works too
+                body: `docker compose up failed in ${absDir}: ${errorMessage}`,
+                headers: {
+                  title: "SID 🐳 - Failed to start docker compose",
+                },
+              });
+            }
             reject(new Error(errorMessage));
           }
         });
