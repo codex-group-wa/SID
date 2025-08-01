@@ -110,7 +110,7 @@ export async function check() {
             method: "POST", // PUT works too
             body: "Error parsing JSON: ${(err as Error).message}",
             headers: {
-              title: "SID 🐳 - Error",
+              "X-Title": "SID 🐳 - Error",
             },
           });
         }
@@ -396,7 +396,7 @@ export async function clone() {
             method: "POST", // PUT works too
             body: `Clone stderr: ${data}`,
             headers: {
-              title: "SID 🐳 - Error Cloning",
+              "X-Title": "SID 🐳 - Error Cloning",
             },
           });
         }
@@ -441,7 +441,7 @@ export async function clone() {
               method: "POST", // PUT works too
               body: `Repository newly cloned to ${resultPath}`,
               headers: {
-                title: "SID 🐳 - Success",
+                "X-Title": "SID 🐳 - Success",
               },
             });
           }
@@ -525,7 +525,7 @@ export async function runDockerComposeForChangedDirs(
               method: "POST", // PUT works too
               body: `Error: {message}`,
               headers: {
-                title: "SID 🐳 - Failed to start docker compose",
+                "X-Title": "SID 🐳 - Failed to start docker compose",
               },
             });
           }
@@ -547,7 +547,7 @@ export async function runDockerComposeForChangedDirs(
                 method: "POST", // PUT works too
                 body: `docker compose up succeeded in ${absDir}`,
                 headers: {
-                  title: "SID 🐳 - Success",
+                  "X-Title": "SID 🐳 - Success",
                 },
               });
             }
@@ -568,7 +568,7 @@ export async function runDockerComposeForChangedDirs(
                 method: "POST", // PUT works too
                 body: `docker compose up failed in ${absDir}: ${errorMessage}`,
                 headers: {
-                  title: "SID 🐳 - Failed to start docker compose",
+                  "X-Title": "SID 🐳 - Failed to start docker compose",
                 },
               });
             }
