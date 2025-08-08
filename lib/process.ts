@@ -110,7 +110,7 @@ export async function check() {
             method: "POST", // PUT works too
             body: "Error parsing JSON: ${(err as Error).message}",
             headers: {
-              "X-Title": "SID 🐳 - Error",
+              "X-Title": "~~SID~~ - Error",
             },
           });
         }
@@ -396,7 +396,7 @@ export async function clone() {
             method: "POST", // PUT works too
             body: `Clone stderr: ${data}`,
             headers: {
-              "X-Title": "SID 🐳 - Error Cloning",
+              "X-Title": "~~SID~~ - Error Cloning",
             },
           });
         }
@@ -441,7 +441,7 @@ export async function clone() {
               method: "POST", // PUT works too
               body: `Repository newly cloned to ${resultPath}`,
               headers: {
-                "X-Title": "SID 🐳 - Success",
+                "X-Title": "~~SID~~ - Success",
               },
             });
           }
@@ -525,7 +525,7 @@ export async function runDockerComposeForChangedDirs(
               method: "POST", // PUT works too
               body: `Error: {message}`,
               headers: {
-                "X-Title": "SID 🐳 - Failed to start docker compose",
+                "X-Title": "~~SID~~ - Failed to start docker compose",
               },
             });
           }
@@ -547,7 +547,7 @@ export async function runDockerComposeForChangedDirs(
                 method: "POST", // PUT works too
                 body: `docker compose up succeeded in ${absDir}`,
                 headers: {
-                  "X-Title": "SID 🐳 - Success",
+                  "X-Title": "~~SID~~ - Success",
                 },
               });
             }
@@ -568,7 +568,7 @@ export async function runDockerComposeForChangedDirs(
                 method: "POST", // PUT works too
                 body: `docker compose up failed in ${absDir}: ${errorMessage}`,
                 headers: {
-                  "X-Title": "SID 🐳 - Failed to start docker compose",
+                  "X-Title": "~~SID~~ - Failed to start docker compose",
                 },
               });
             }
