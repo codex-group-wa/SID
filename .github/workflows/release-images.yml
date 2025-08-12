@@ -10,10 +10,12 @@ env:
 jobs:
   build-and-push:
     name: Build and Push
-    runs-on: depot-ubuntu-22.04
+    runs-on: ubuntu-latest
+    # Permissions to use OIDC token authentication
     permissions:
       contents: read
       packages: write
+      id-token: write
     
     steps:
       - name: Checkout repository
