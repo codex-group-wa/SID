@@ -10,7 +10,7 @@ env:
 jobs:
   build-and-push:
     name: Build and Push
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     # Permissions to use OIDC token authentication
     permissions:
       contents: read
