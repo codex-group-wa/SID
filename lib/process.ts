@@ -1,13 +1,10 @@
 "use server";
 
-import getConfig from "next/config";
 import { spawn } from "node:child_process";
 import { readdirSync, statSync } from "fs";
 import { join } from "path";
 import { createEvent } from "./db";
 import { revalidatePath } from "next/cache";
-
-const { publicRuntimeConfig } = getConfig();
 
 // Helper function for consistent error handling
 function handleProcessError(
@@ -108,8 +105,8 @@ export async function check() {
       } catch (err) {
         console.error(`check() error parsing JSON: ${(err as Error).message}`);
         createEvent("Error", `Error parsing JSON: ${(err as Error).message}`);
-        if (publicRuntimeConfig.NTFY_URL) {
-          fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+        if (process.env.NTFY_URL) {
+          fetch(`${process.env.NTFY_URL}`, {
             method: "POST", // PUT works too
             body: "Error parsing JSON: ${(err as Error).message}",
             headers: {
@@ -329,8 +326,8 @@ export async function restartContainer(id: string) {
 
 export async function clone() {
   return new Promise((resolve, reject) => {
-    const workingDir = publicRuntimeConfig.WORKING_DIR || "/app/data";
-    const repoRoot = publicRuntimeConfig.REPO_URL;
+    const workingDir = process.env.WORKING_DIR || "/app/data";
+    const repoRoot = process.env.REPO_URL;
 
     if (!repoRoot) {
       const errorMessage =
@@ -341,7 +338,7 @@ export async function clone() {
       return;
     }
 
-    if (!publicRuntimeConfig.WORKING_DIR) {
+    if (!process.env.WORKING_DIR) {
       console.warn(
         "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
       );
@@ -351,7 +348,7 @@ export async function clone() {
       );
     }
 
-    const repoName = publicRuntimeConfig.REPO_NAME;
+    const repoName = process.env.REPO_NAME;
     const repoPath = `${workingDir}/${repoName}`;
 
     // Detect SSH or HTTPS/PAT repo URL
@@ -394,8 +391,8 @@ export async function clone() {
       if (isActualError) {
         console.error(`clone() stderr: ${data}`);
         createEvent("Error", `Clone stderr: ${data}`);
-        if (publicRuntimeConfig.NTFY_URL) {
-          fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+        if (process.env.NTFY_URL) {
+          fetch(`${process.env.NTFY_URL}`, {
             method: "POST", // PUT works too
             body: `Clone stderr: ${data}`,
             headers: {
@@ -439,8 +436,8 @@ export async function clone() {
         } else {
           console.info(`clone() repository newly cloned to ${resultPath}.`);
           createEvent("Info", `Repository newly cloned to ${resultPath}`);
-          if (publicRuntimeConfig.NTFY_URL) {
-            fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+          if (process.env.NTFY_URL) {
+            fetch(`${process.env.NTFY_URL}`, {
               method: "POST", // PUT works too
               body: `Repository newly cloned to ${resultPath}`,
               headers: {
@@ -473,7 +470,7 @@ export async function clone() {
 export async function runDockerComposeForChangedDirs(
   files: string[],
 ): Promise<{ dir: string; result: string; error?: string }[]> {
-  let workingDir = publicRuntimeConfig.WORKING_DIR || "/app/data";
+  let workingDir = process.env.WORKING_DIR || "/app/data";
 
   if (!workingDir) {
     console.warn(
@@ -481,13 +478,11 @@ export async function runDockerComposeForChangedDirs(
     );
   }
 
-  if (!publicRuntimeConfig.REPO_URL) {
+  if (!process.env.REPO_URL) {
     throw new Error("Required environment variable REPO_URL is not set");
   }
 
-  const repoName = publicRuntimeConfig.REPO_URL?.split("/")
-    .pop()
-    ?.replace(".git", "");
+  const repoName = process.env.REPO_URL?.split("/").pop()?.replace(".git", "");
   workingDir = `${workingDir}/${repoName}`;
 
   // Get unique directories from file paths
@@ -525,8 +520,8 @@ export async function runDockerComposeForChangedDirs(
           const message = `Failed to start docker compose in ${absDir}: ${error.message}`;
           console.error(message);
           createEvent("Error", message, dir.split("/")[0]);
-          if (publicRuntimeConfig.NTFY_URL) {
-            fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+          if (process.env.NTFY_URL) {
+            fetch(`${process.env.NTFY_URL}`, {
               method: "POST", // PUT works too
               body: `Error: {message}`,
               headers: {
@@ -547,8 +542,8 @@ export async function runDockerComposeForChangedDirs(
               `docker compose up succeeded in ${absDir}`,
               dir.split("/")[0],
             );
-            if (publicRuntimeConfig.NTFY_URL) {
-              fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+            if (process.env.NTFY_URL) {
+              fetch(`${process.env.NTFY_URL}`, {
                 method: "POST", // PUT works too
                 body: `docker compose up succeeded in ${absDir}`,
                 headers: {
@@ -568,8 +563,8 @@ export async function runDockerComposeForChangedDirs(
               `docker compose up failed in ${absDir}: ${errorMessage}`,
               dir.split("/")[0],
             );
-            if (publicRuntimeConfig.NTFY_URL) {
-              fetch(`${publicRuntimeConfig.NTFY_URL}`, {
+            if (process.env.NTFY_URL) {
+              fetch(`${process.env.NTFY_URL}`, {
                 method: "POST", // PUT works too
                 body: `docker compose up failed in ${absDir}: ${errorMessage}`,
                 headers: {
@@ -600,8 +595,8 @@ export async function runDockerComposeForChangedDirs(
 }
 
 export async function findAllDockerComposeFiles(): Promise<string[]> {
-  const workingDir = publicRuntimeConfig.WORKING_DIR || "/app/data";
-  const repoRoot = publicRuntimeConfig.REPO_URL;
+  const workingDir = process.env.WORKING_DIR || "/app/data";
+  const repoRoot = process.env.REPO_URL;
 
   if (!repoRoot) {
     throw new Error("Required environment variable REPO_URL is not set");
@@ -612,7 +607,7 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
     throw new Error("Unable to determine repository name from REPO_URL");
   }
 
-  if (!publicRuntimeConfig.WORKING_DIR) {
+  if (!process.env.WORKING_DIR) {
     console.warn(
       "No WORKING_DIR environment variable. Using default path `/app/data/` -- ensure this path is mounted!",
     );
@@ -663,7 +658,7 @@ export async function findAllDockerComposeFiles(): Promise<string[]> {
 export async function runDockerComposeForPath(
   path: string,
 ): Promise<{ dir: string; result: string; error?: string }> {
-  const workingDir = publicRuntimeConfig.WORKING_DIR;
+  const workingDir = process.env.WORKING_DIR;
 
   if (!workingDir) {
     throw new Error("WORKING_DIR environment variable is not set");
