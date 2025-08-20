@@ -8,19 +8,28 @@ env:
   IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
-  build-and-push:
-    name: Build and Push
-    runs-on: ubuntu-latest
+  build-and-push-amd64:
+    name: Build and Push (amd64)
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
-    
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-app
+          key: ${{ runner.os }}-buildx-app-${{ github.sha }}-amd64
+          restore-keys: |
+            ${{ runner.os }}-buildx-app-amd64
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -39,16 +48,82 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ github.ref == format('refs/tags/{0}', github.event.release.tag_name) }}
 
-      - name: Build and push image
-        uses: docker/build-push-action@v5
+      - name: Build and push amd64 image
+        uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=local,src=/tmp/.buildx-cache-app
+          cache-to: type=local,dest=/tmp/.buildx-cache-app-new,mode=max
           build-args: |
             NEXT_PUBLIC_APP_VERSION=${{ github.event.release.tag_name }}
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-app
+          mv /tmp/.buildx-cache-app-new /tmp/.buildx-cache-app
+
+  build-and-push-arm64:
+    name: Build and Push (arm64)
+    runs-on: blacksmith-4vcpu-ubuntu-2204-arm
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-app
+          key: ${{ runner.os }}-buildx-app-${{ github.sha }}-arm64
+          restore-keys: |
+            ${{ runner.os }}-buildx-app-arm64
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/tags/{0}', github.event.release.tag_name) }}
+
+      - name: Build and push arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache-app
+          cache-to: type=local,dest=/tmp/.buildx-cache-app-new,mode=max
+          build-args: |
+            NEXT_PUBLIC_APP_VERSION=${{ github.event.release.tag_name }}
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-app
+          mv /tmp/.buildx-cache-app-new /tmp/.buildx-cache-app
